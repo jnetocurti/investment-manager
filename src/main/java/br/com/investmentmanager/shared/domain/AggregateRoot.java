@@ -1,0 +1,28 @@
+package br.com.investmentmanager.shared.domain;
+
+import br.com.investmentmanager.shared.domain.events.DomainEvent;
+import lombok.NonNull;
+import org.springframework.data.annotation.Transient;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+
+public abstract class AggregateRoot extends Entity {
+
+    private transient final @Transient List<DomainEvent> domainEvents = new ArrayList<>();
+
+    protected AggregateRoot(UUID id) {
+        super(id);
+    }
+
+    protected void registerEvent(@NonNull DomainEvent event) {
+        this.domainEvents.add(event);
+    }
+
+    public Collection<DomainEvent> domainEvents() {
+        return Collections.unmodifiableList(domainEvents);
+    }
+}

@@ -1,0 +1,30 @@
+# Spring
+spring:
+  data:
+    mongodb:
+      uri: ${MONGO_URI}
+      auto-index-creation: true
+      uuid-representation: standard
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_PORT}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
+  minio:
+    url: ${MINIO_URL}
+    bucket: ${MINIO_BUCKET}
+    access-key: ${MINIO_ACCESS_KEY}
+    secret-key: ${MINIO_SECRET_KEY}
+
+# Spring Doc
+springdoc:
+  swagger-ui:
+    use-root-path: true
+
+# Trading Note Boundary
+tradingnote:
+  infrastructure:
+    rabbitmq:
+      trading-note-exchange: ${TRADING_NOTE_EXCHANGE:trading-note}
+      trading-note-created-queue: ${TRADING_NOTE_CREATED_QUEUE:trading-note-created-queue}
+      trading-note-created-routing-key: ${TRADING_NOTE_CREATED_ROUTING_KEY:trading-note.event.created}

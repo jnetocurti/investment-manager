@@ -1,0 +1,26 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="InvestmentManagerApplication" type="Application" factoryName="Application" nameIsGenerated="true">
+    <envs>
+      <env name="MONGO_URI" value="mongodb://mongo:mongo123@localhost:27017/investment-manager?authMechanism=SCRAM-SHA-1&amp;authSource=admin" />
+      <env name="RABBITMQ_HOST" value="localhost"/>
+      <env name="RABBITMQ_PORT" value="5672"/>
+      <env name="RABBITMQ_USERNAME" value="rabbitmq"/>
+      <env name="RABBITMQ_PASSWORD" value="rabbitmq123"/>
+      <env name="MINIO_URL" value="http://127.0.0.1:9000/"/>
+      <env name="MINIO_BUCKET" value="files"/>
+      <env name="MINIO_ACCESS_KEY" value="minio"/>
+      <env name="MINIO_SECRET_KEY" value="minio123"/>
+    </envs>
+    <option name="MAIN_CLASS_NAME" value="br.com.investmentmanager.InvestmentManagerApplication" />
+    <module name="investment-manager" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="br.com.investmentmanager.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
