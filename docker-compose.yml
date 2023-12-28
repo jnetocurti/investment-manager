@@ -1,0 +1,30 @@
+version: '3'
+
+services:
+  minio:
+    image: minio/minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_storage:/data
+    environment:
+      MINIO_ROOT_USER: masoud
+      MINIO_ROOT_PASSWORD: Strong#Pass#2022
+    command: server --console-address ":9001" /data
+
+volumes:
+  minio_storage: {}
+
+# http://www.sefidian.com/2022/04/08/deploy-standalone-minio-using-docker-compose/
+#  docker-compose --project-name standalone_minio -f minio-compose.yml up
+
+
+
+
+
+
+
+
+
+
