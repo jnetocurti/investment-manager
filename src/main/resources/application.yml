@@ -1,1 +1,6 @@
-
+storage:
+  bucket: ${STORAGE_BUCKET:my-bucket}
+  url: ${STORAGE_URL:http://127.0.0.1:9000}
+  credentials:
+    accessKey: ${STORAGE_ACCESS_KEY:minio}
+    secretKey: ${STORAGE_SECRET_KEY:miniopwd}
