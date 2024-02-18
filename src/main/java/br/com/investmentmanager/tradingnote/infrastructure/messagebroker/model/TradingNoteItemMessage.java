@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 @Data
-public class TradingNoteMessageItem {
+public class TradingNoteItemMessage {
     private UUID id;
     private String assetCode;
     private BigDecimal quantity;

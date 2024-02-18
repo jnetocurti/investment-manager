@@ -28,3 +28,11 @@ tradingnote:
       trading-note-exchange: ${TRADING_NOTE_EXCHANGE:trading-note}
       trading-note-created-queue: ${TRADING_NOTE_CREATED_QUEUE:trading-note-created-queue}
       trading-note-created-routing-key: ${TRADING_NOTE_CREATED_ROUTING_KEY:trading-note.event.created}
+
+# Portfolio Event Boundary
+portfolioevent:
+  infrastructure:
+    rabbitmq:
+      portfolio-event-exchange: ${PORTFOLIO-EVENT_EXCHANGE:portfolio-event}
+      portfolio-event-created-queue: ${PORTFOLIO-EVENT_CREATED_QUEUE:portfolio-event-created-queue}
+      portfolio-event-created-routing-key: ${PORTFOLIO-EVENT_CREATED_ROUTING_KEY:portfolio-event.event.created}

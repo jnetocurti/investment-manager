@@ -1,4 +1,4 @@
-package br.com.investmentmanager.tradingnote.infrastructure.messagebroker.model;
+package br.com.investmentmanager.portfolioevent.application.input;
 
 import br.com.investmentmanager.shared.domain.valueobjects.MonetaryValue;
 import lombok.Data;
