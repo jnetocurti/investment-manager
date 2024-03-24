@@ -17,4 +17,5 @@ public class PersistenceAsset extends PersistenceEntity {
     private BigDecimal quantity;
     private MonetaryValue averagePurchaseCost;
     private List<PersistencePortfolioEvent> portfolioEvents;
+    private List<PersistencePositionHistory> positionHistory;
 }
