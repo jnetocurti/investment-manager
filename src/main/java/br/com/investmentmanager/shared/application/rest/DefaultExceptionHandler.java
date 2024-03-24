@@ -27,6 +27,7 @@ public class DefaultExceptionHandler {
 
     @ExceptionHandler(Throwable.class)
     public ResponseEntity<ApiErrorResponse> handleThrowable(Throwable ex) {
+        ex.printStackTrace();
 
         var status = HttpStatus.INTERNAL_SERVER_ERROR.value();
         var apiErrorResponseBuilder = ApiErrorResponse.builder();

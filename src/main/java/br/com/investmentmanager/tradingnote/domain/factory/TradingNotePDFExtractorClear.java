@@ -7,11 +7,11 @@ import lombok.Getter;
 class TradingNotePDFExtractorClear extends TradingNotePDFExtractor {
     private final String broker = "Clear";
     private final Currency currency = Currency.BRL;
-    private final String brokerPattern = "(02.332.886/0011-78)";
+    private final String brokerPattern = "(02.332.886/0011-78|15.107.963/0001-66)";
     private final String invoiceNumberPattern = "[Nr.nota\\s]{10}([\\d]+)";
     private final String tradingDatePattern = "[Datpregão\\s]{13}([\\d/]{10})";
     private final String liquidateDatePattern = "[Líquidopar\\s]{12}([\\d/]{10})";
-    private final String totalAmountPattern = "[OutrosC\\s]{8}([\\d.,]+)[Líquidopar\\s]{12}";
+    private final String totalAmountPattern = "([\\d.,]+)[Líquidopar\\s]{12}\\b";
 
     private final TradingNoteItemsExtractor tradingNoteItemsExtractor = new TradingNoteItemsNuInvestExtractor();
 
@@ -22,21 +22,21 @@ class TradingNotePDFExtractorClear extends TradingNotePDFExtractor {
     @Getter
     static class TradingNoteItemsNuInvestExtractor extends TradingNoteItemsExtractor {
         private final Currency currency = Currency.BRL;
-        private final String itemsPattern = "([CV]{1})[FRACION\\s]{13}(.*)\\s(\\d)\\s([\\d.,]+)\\s([\\d.,]+)";
+        private final String itemsPattern = "(C|V)\\b\\s(VISTA|FRACIONARIO)\\s(.*)\\s(\\d+)\\s([\\d,]+)\\s([\\d,]+)";
 
         @Override
         protected int getAssetCodeGroup() {
-            return 2;
-        }
-
-        @Override
-        protected int getQuantityGroup() {
             return 3;
         }
 
         @Override
-        protected int getUnitPriceGroup() {
+        protected int getQuantityGroup() {
             return 4;
+        }
+
+        @Override
+        protected int getUnitPriceGroup() {
+            return 5;
         }
 
         @Override

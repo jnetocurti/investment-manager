@@ -16,11 +16,13 @@ public class AddAssetPurchase {
 
         var asset = service.getOrCreate(event.getAsset().getAssetCode(), event.getAsset().getAssetType());
 
-        asset.addPurchase(PortfolioEvent.builder()
-                .quantity(event.getQuantity())
-                .operation(event.getOperation())
-                .averagePurchaseCost(event.getTotalAmount())
-                .build());
+        asset.addPurchase(PortfolioEvent.of(
+                event.getInvoiceNumber(),
+                event.getOperation(),
+                event.getQuantity(),
+                event.getEventDate(),
+                event.getTotalAmount()
+        ));
 
         service.save(asset);
     }

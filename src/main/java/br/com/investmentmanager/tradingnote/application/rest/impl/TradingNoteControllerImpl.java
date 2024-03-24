@@ -38,6 +38,8 @@ public class TradingNoteControllerImpl implements TradingNoteController {
                 .details(List.of(Map.of("field", "file", "message", ex.getMessage())))
                 .build();
 
+        ex.printStackTrace();
+
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 }

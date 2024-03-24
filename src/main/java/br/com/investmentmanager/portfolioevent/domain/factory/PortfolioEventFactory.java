@@ -7,8 +7,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-import static br.com.investmentmanager.shared.util.constants.AssetType.BRAZILIAN_STOCKS;
-import static br.com.investmentmanager.shared.util.constants.AssetType.REAL_ESTATE_FUND;
+import static br.com.investmentmanager.shared.util.constants.AssetType.*;
 
 @Component
 public class PortfolioEventFactory {
@@ -35,13 +34,20 @@ public class PortfolioEventFactory {
     // TODO dependencia modulo Asset para classificação e criação de ativos
     private static Asset createAsset(String assetCode) {
         assetCode = switch (assetCode) {
-            case "ENGIE BRASIL ON NM" -> "EGIE3";
-            case "ITAUUNIBANCO ON N1" -> "ITUB3";
+            case "ITAUUN" -> "ITUB3";
+            case "BRADES" -> "BBDC3";
+            case "ENGIE" -> "EGIE3";
+            case "MGLU3F" -> "MGLU3";
+            case "PETR4F" -> "PETR4";
+            case "XP INC DR1" -> "XPBR31";
             default -> assetCode;
         };
 
         var assetType = switch (assetCode) {
-            case "EGIE3", "ITUB3" -> BRAZILIAN_STOCKS;
+            case "EGIE3", "ITUB3", "BBDC3", "PETR4", "MGLU3" -> BRAZILIAN_STOCKS;
+            case "HASH11", "NDIV11" -> EXCHANGE_TRADED_FUNDS;
+            case "AMZO34", "NFLX34", "XPBR31" -> BRAZILIAN_DEPOSITARY_RECEIPT;
+            case "MXRF12", "KNRI12" -> REAL_ESTATE_FUND_DIREITO;
             default -> REAL_ESTATE_FUND;
         };
 

@@ -16,6 +16,6 @@ public class PortfolioEventService {
 
     public void create(List<PortfolioEvent> portfolioEvents) {
         repository.save(portfolioEvents);
-        portfolioEvents.stream().flatMap(p -> p.domainEvents().parallelStream()).forEach(publisher::publishEvent);
+//        portfolioEvents.stream().flatMap(p -> p.domainEvents().parallelStream()).forEach(publisher::publishEvent);
     }
 }

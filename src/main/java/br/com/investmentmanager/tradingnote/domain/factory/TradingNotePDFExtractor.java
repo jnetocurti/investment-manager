@@ -61,13 +61,13 @@ abstract class TradingNotePDFExtractor {
             getTradingNoteItemsExtractor().extract(content);
             return this;
         } else {
-            System.out.println(getMatchedValue(getInvoiceNumberPattern()));
             return next.map(e -> e.extract(this.content)).orElseThrow(UnsupportedTradingNoteContentException::new);
         }
     }
 
     protected final Matcher getMatcher(String pattern) {
-        return Pattern.compile(pattern).matcher(content);
+        Matcher matcher = Pattern.compile(pattern).matcher(content);
+        return matcher;
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
