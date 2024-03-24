@@ -23,21 +23,24 @@ class TradingNotePDFExtractorNuInvest extends TradingNotePDFExtractor {
     static class TradingNoteItemsNuInvestExtractor extends TradingNoteItemsExtractor {
         private final Currency currency = Currency.BRL;
         // TODO rever regex para notas diferentes
-        private final String itemsPattern = "BOVESPA\\s([CV])[VISTA\\s]+(\\w+)[CIER#\\s]+(\\d+)\\s([\\d,]+)\\s[\\d,]+\\s";
+//        private final String itemsPattern = "BOVESPA\\s([CV])[VISTA\\s]+([\\w\\s]+)(\\d+)\\s([\\d.,]+)\\s([\\d.,]+)\\s";
+//        private final String itemsPattern = "BOVESPA\\s([CV])[VISTA\\s]+(.*)\\s\\b([\\d.]+)\\s\\b([\\d.,]+)\\s\\b[\\d.,]+";
+//        private final String itemsPattern = "BOVESPA\\s([CV])\\sVISTA\\s(.*)\\s\\b([\\d.]+)\\s\\b([\\d.,]+)\\s\\b[\\d.,]+";
+        private final String itemsPattern = "BOVESPA\\s([CV])\\s(VISTA|FRACIONARIO)\\s(.*)\\s\\b([\\d.]+)\\s\\b([\\d.,]+)\\s\\b[\\d.,]+";
 
         @Override
         protected int getAssetCodeGroup() {
-            return 2;
-        }
-
-        @Override
-        protected int getQuantityGroup() {
             return 3;
         }
 
         @Override
-        protected int getUnitPriceGroup() {
+        protected int getQuantityGroup() {
             return 4;
+        }
+
+        @Override
+        protected int getUnitPriceGroup() {
+            return 5;
         }
 
         @Override

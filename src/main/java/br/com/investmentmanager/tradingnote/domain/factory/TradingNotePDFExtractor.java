@@ -9,12 +9,14 @@ import lombok.Getter;
 import lombok.NonNull;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -59,6 +61,7 @@ abstract class TradingNotePDFExtractor {
             getTradingNoteItemsExtractor().extract(content);
             return this;
         } else {
+            System.out.println(getMatchedValue(getInvoiceNumberPattern()));
             return next.map(e -> e.extract(this.content)).orElseThrow(UnsupportedTradingNoteContentException::new);
         }
     }
@@ -110,12 +113,21 @@ abstract class TradingNotePDFExtractor {
             items = Pattern.compile(getItemsPattern()).matcher(content).results()
                     .map(m -> TradingNoteItemDTO.builder()
                             .currency(getCurrency())
-                            .assetCode(m.group(getAssetCodeGroup()).replaceAll("\s+", " "))
+                            .assetCode(getAssetCode(m))
                             .quantity(parseBigDecimal(m.group(getQuantityGroup())))
                             .unitPrice(parseBigDecimal(m.group(getUnitPriceGroup())))
                             .operation(Operation.of(m.group(getOperationGroup())))
                             .build())
                     .toList();
+        }
+
+        private String getAssetCode(MatchResult m) {
+            var raw = m.group(getAssetCodeGroup()).replaceAll("\s+", " ");
+
+            Matcher matcher = Pattern.compile("(\\w{5,6})").matcher(raw);
+            raw = matcher.find() ? matcher.group(1) : raw;
+
+            return raw;
         }
 
         protected abstract Currency getCurrency();
