@@ -11,9 +11,9 @@ import lombok.ToString;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.UUID;
 
 @Getter
-@Builder
 @ToString
 public class PortfolioEvent extends AggregateRoot {
     private final LocalDate eventDate;
@@ -28,20 +28,52 @@ public class PortfolioEvent extends AggregateRoot {
     private final String invoiceNumber;
     private final Asset asset;
 
-    public static PortfolioEvent.PortfolioEventBuilder builder() {
-        return new PortfolioEvent.CustomPortfolioEventBuilder();
+    @Builder
+    public PortfolioEvent(
+            UUID id,
+            LocalDate eventDate,
+            LocalDate eventLiquidateDate,
+            Operation operation,
+            BigDecimal quantity,
+            MonetaryValue unitPrice,
+            MonetaryValue totalAmount,
+            MonetaryValue netAmount,
+            MonetaryValue costs,
+            String broker,
+            String invoiceNumber,
+            Asset asset
+    ) {
+        super(id);
+        this.eventDate = eventDate;
+        this.eventLiquidateDate = eventLiquidateDate;
+        this.operation = operation;
+        this.quantity = quantity;
+        this.unitPrice = unitPrice;
+        this.totalAmount = totalAmount;
+        this.netAmount = netAmount;
+        this.costs = costs;
+        this.broker = broker;
+        this.invoiceNumber = invoiceNumber;
+        this.asset = asset;
+        validate();
+
+        this.registerEvent(new PortfolioEventCreated(this));
     }
 
-    private static class CustomPortfolioEventBuilder extends PortfolioEventBuilder {
-
-        @Override
-        public PortfolioEvent build() {
-            var portfolioEvent = super.build();
-            portfolioEvent.validate();
-
-            portfolioEvent.registerEvent(new PortfolioEventCreated(portfolioEvent));
-
-            return portfolioEvent;
-        }
-    }
+//    public static PortfolioEvent.PortfolioEventBuilder builder() {
+//        return new PortfolioEvent.CustomPortfolioEventBuilder();
+//    }
+//
+//    private static class CustomPortfolioEventBuilder extends PortfolioEventBuilder {
+//
+//        @Override
+//        public PortfolioEvent build() {
+//            var portfolioEvent = super.build();
+//            portfolioEvent.validate();
+//
+//            portfolioEvent.registerEvent(new PortfolioEventCreated(portfolioEvent));
+//
+//            return portfolioEvent;
+//        }
+//    }
 }
