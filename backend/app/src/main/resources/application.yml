@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: investment-manager
+  profiles:
+    active: minio
+
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/investmentmanager
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+server:
+  port: 8080
+
+minio:
+  endpoint: http://localhost:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket: trading-notes

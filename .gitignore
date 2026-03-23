@@ -1,0 +1,16 @@
+# PDFs / notas de negociação
+notas_negociacao/
+
+# OS
+.DS_Store
+
+# IDE
+.idea/
+*.iml
+
+# Maven build output
+**/target/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
