@@ -1,41 +1,52 @@
 package com.investmentmanager.portfolioevent.adapter.in.messaging;
 
 import com.investmentmanager.commons.domain.model.OperationType;
-import com.investmentmanager.portfolioevent.domain.model.PortfolioEventCreatedEvent;
-import com.investmentmanager.portfolioevent.domain.port.out.PortfolioEventPublisherPort;
+import com.investmentmanager.portfolioevent.domain.model.PortfolioEvent;
+import com.investmentmanager.portfolioevent.domain.port.in.CreatePortfolioEventsCommand;
+import com.investmentmanager.portfolioevent.domain.port.in.CreatePortfolioEventsUseCase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.Map;
-import java.util.UUID;
+import java.util.List;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class TradingNoteCreatedListener {
 
-    private final PortfolioEventPublisherPort eventPublisher;
+    private final CreatePortfolioEventsUseCase useCase;
 
     @RabbitListener(queues = "tradingnote.created.queue")
-    public void onTradingNoteCreated(Map<String, Object> message) {
-        log.info("Received TradingNoteCreatedEvent: {}", message);
+    public void onTradingNoteCreated(TradingNoteMessage message) {
+        log.info("Recebido TradingNoteCreatedEvent: noteId={}", message.getTradingNoteId());
 
-        // TODO: substituir por lógica real de transformação
-        var stubEvent = PortfolioEventCreatedEvent.builder()
-                .portfolioEventId(UUID.randomUUID().toString())
-                .ticker("PETR4")
-                .type(OperationType.BUY)
-                .quantity(100)
-                .unitPrice(new BigDecimal("28.50"))
-                .totalFees(new BigDecimal("5.00"))
-                .eventDate(LocalDate.now())
-                .build();
+        try {
+            var command = CreatePortfolioEventsCommand.builder()
+                    .tradingNoteId(message.getTradingNoteId())
+                    .noteNumber(message.getNoteNumber())
+                    .brokerName(message.getBrokerName())
+                    .tradingDate(message.getTradingDate())
+                    .currency(message.getCurrency())
+                    .operations(message.getOperations().stream()
+                            .map(op -> CreatePortfolioEventsCommand.OperationData.builder()
+                                    .assetName(op.getAssetName())
+                                    .operationType(OperationType.valueOf(op.getOperationType()))
+                                    .quantity(op.getQuantity())
+                                    .unitPrice(op.getUnitPrice())
+                                    .totalValue(op.getTotalValue())
+                                    .fee(op.getFee())
+                                    .build())
+                            .toList())
+                    .build();
 
-        eventPublisher.publishCreated(stubEvent);
-        log.info("Published PortfolioEventCreatedEvent for ticker={}", stubEvent.getTicker());
+            List<PortfolioEvent> events = useCase.createFromTradingNote(command);
+            log.info("Criados {} eventos de portfólio para noteId={}", events.size(), message.getTradingNoteId());
+
+        } catch (Exception e) {
+            log.error("Erro ao processar TradingNoteCreatedEvent noteId={}: {}",
+                    message.getTradingNoteId(), e.getMessage(), e);
+        }
     }
 }

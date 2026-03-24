@@ -14,3 +14,6 @@ notas_negociacao/
 # Frontend
 frontend/node_modules/
 frontend/dist/
+
+.kiro/*
+prompts.txt

@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -18,8 +20,8 @@ public class PortfolioEventRabbitPublisher implements PortfolioEventPublisherPor
     private final RabbitTemplate rabbitTemplate;
 
     @Override
-    public void publishCreated(PortfolioEventCreatedEvent event) {
-        log.info("Publishing PortfolioEventCreatedEvent for eventId={}", event.getPortfolioEventId());
-        rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY, event);
+    public void publishAllCreated(List<PortfolioEventCreatedEvent> events) {
+        log.info("Publicando batch de {} eventos de portfólio", events.size());
+        rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY, events);
     }
 }
