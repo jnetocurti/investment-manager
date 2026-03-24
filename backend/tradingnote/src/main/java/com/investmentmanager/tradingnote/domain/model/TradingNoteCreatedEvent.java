@@ -18,6 +18,7 @@ public class TradingNoteCreatedEvent {
     private String tradingNoteId;
     private String noteNumber;
     private String brokerName;
+    private String brokerDocument;
     private LocalDate tradingDate;
     private List<OperationEvent> operations;
     private BigDecimal totalNote;
@@ -29,6 +30,7 @@ public class TradingNoteCreatedEvent {
                 .tradingNoteId(note.getId())
                 .noteNumber(note.getNoteNumber())
                 .brokerName(note.getBroker().getName())
+                .brokerDocument(note.getBroker().getDocumentId())
                 .tradingDate(note.getTradingDate())
                 .totalNote(note.getTotalNote().toDisplayValue())
                 .totalFees(note.getTotalFees().toDisplayValue())

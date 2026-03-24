@@ -25,6 +25,7 @@ public class PortfolioEventDocument {
     private String eventType;
     private String eventSource;
     private String assetName;
+    private String assetType;
     private int quantity;
     private BigDecimal unitPrice;
     private BigDecimal totalValue;
@@ -32,6 +33,7 @@ public class PortfolioEventDocument {
     private String currency;
     private LocalDate eventDate;
     private String brokerName;
+    private String brokerDocument;
 
     @Indexed
     private String sourceReferenceId;

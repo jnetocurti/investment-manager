@@ -17,8 +17,12 @@ public class RabbitMQConfig {
     public static final String TRADINGNOTE_CREATED_ROUTING_KEY = "tradingnote.created";
 
     public static final String PORTFOLIOEVENT_EXCHANGE = "portfolioevent.exchange";
-    public static final String PORTFOLIOEVENT_CREATED_QUEUE = "portfolioevent.created.queue";
-    public static final String PORTFOLIOEVENT_CREATED_ROUTING_KEY = "portfolioevent.created";
+    public static final String PORTFOLIOEVENT_PROCESSED_QUEUE = "portfolioevent.processed.queue";
+    public static final String PORTFOLIOEVENT_PROCESSED_ROUTING_KEY = "portfolioevent.processed";
+
+    public static final String ASSETPOSITION_EXCHANGE = "assetposition.exchange";
+    public static final String ASSETPOSITION_DLQ = "assetposition.calculated.dlq";
+    public static final String ASSETPOSITION_DLQ_ROUTING_KEY = "assetposition.calculated.dlq";
 
     @Bean
     public MessageConverter jsonMessageConverter() {
@@ -53,15 +57,35 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Queue portfolioEventCreatedQueue() {
-        return new Queue(PORTFOLIOEVENT_CREATED_QUEUE, true);
+    public Queue portfolioEventProcessedQueue() {
+        return new Queue(PORTFOLIOEVENT_PROCESSED_QUEUE, true);
     }
 
     @Bean
-    public Binding portfolioEventCreatedBinding(Queue portfolioEventCreatedQueue,
+    public Binding portfolioEventProcessedBinding(Queue portfolioEventProcessedQueue,
                                                  TopicExchange portfolioEventExchange) {
-        return BindingBuilder.bind(portfolioEventCreatedQueue)
+        return BindingBuilder.bind(portfolioEventProcessedQueue)
                 .to(portfolioEventExchange)
-                .with(PORTFOLIOEVENT_CREATED_ROUTING_KEY);
+                .with(PORTFOLIOEVENT_PROCESSED_ROUTING_KEY);
+    }
+
+    // --- AssetPosition exchange/queue/binding (DLQ) ---
+
+    @Bean
+    public TopicExchange assetPositionExchange() {
+        return new TopicExchange(ASSETPOSITION_EXCHANGE);
+    }
+
+    @Bean
+    public Queue assetPositionDlq() {
+        return new Queue(ASSETPOSITION_DLQ, true);
+    }
+
+    @Bean
+    public Binding assetPositionDlqBinding(Queue assetPositionDlq,
+                                           TopicExchange assetPositionExchange) {
+        return BindingBuilder.bind(assetPositionDlq)
+                .to(assetPositionExchange)
+                .with(ASSETPOSITION_DLQ_ROUTING_KEY);
     }
 }

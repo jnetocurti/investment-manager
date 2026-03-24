@@ -16,6 +16,7 @@ public class TradingNoteMessage {
     private String tradingNoteId;
     private String noteNumber;
     private String brokerName;
+    private String brokerDocument;
     private LocalDate tradingDate;
     private List<OperationMessage> operations;
     private BigDecimal totalNote;

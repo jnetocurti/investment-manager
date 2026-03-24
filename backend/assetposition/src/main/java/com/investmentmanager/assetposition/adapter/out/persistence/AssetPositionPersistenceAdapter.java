@@ -1,0 +1,28 @@
+package com.investmentmanager.assetposition.adapter.out.persistence;
+
+import com.investmentmanager.assetposition.domain.model.AssetPosition;
+import com.investmentmanager.assetposition.domain.port.out.AssetPositionRepositoryPort;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+import java.util.Optional;
+
+@Component
+@RequiredArgsConstructor
+class AssetPositionPersistenceAdapter implements AssetPositionRepositoryPort {
+
+    private final AssetPositionMongoRepository mongoRepository;
+
+    @Override
+    public AssetPosition save(AssetPosition position) {
+        var doc = AssetPositionDocumentMapper.toDocument(position);
+        var saved = mongoRepository.save(doc);
+        return AssetPositionDocumentMapper.toDomain(saved);
+    }
+
+    @Override
+    public Optional<AssetPosition> findByAssetNameAndBrokerDocument(String assetName, String brokerDocument) {
+        return mongoRepository.findByAssetNameAndBrokerDocument(assetName, brokerDocument)
+                .map(AssetPositionDocumentMapper::toDomain);
+    }
+}

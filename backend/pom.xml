@@ -23,7 +23,7 @@
 
     <modules>
         <module>commons</module>
-        <module>asset</module>
+        <module>assetposition</module>
         <module>tradingnote</module>
         <module>portfolioevent</module>
         <module>app</module>

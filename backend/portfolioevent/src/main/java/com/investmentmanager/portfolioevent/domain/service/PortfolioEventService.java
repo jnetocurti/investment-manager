@@ -1,9 +1,10 @@
 package com.investmentmanager.portfolioevent.domain.service;
 
 import com.investmentmanager.portfolioevent.domain.model.PortfolioEvent;
-import com.investmentmanager.portfolioevent.domain.model.PortfolioEventCreatedEvent;
+import com.investmentmanager.portfolioevent.domain.model.PortfolioEventsProcessedEvent;
 import com.investmentmanager.portfolioevent.domain.port.in.CreatePortfolioEventsCommand;
 import com.investmentmanager.portfolioevent.domain.port.in.CreatePortfolioEventsUseCase;
+import com.investmentmanager.portfolioevent.domain.port.out.AssetDetailResolverPort;
 import com.investmentmanager.portfolioevent.domain.port.out.PortfolioEventPublisherPort;
 import com.investmentmanager.portfolioevent.domain.port.out.PortfolioEventRepositoryPort;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +20,7 @@ import java.util.List;
  * <ol>
  *   <li>Mapeamento puro (sem I/O) — todas as operações viram eventos</li>
  *   <li>Persistência em bulk — todos ou nenhum</li>
- *   <li>Publicação em batch — uma mensagem com todos os eventos</li>
+ *   <li>Publicação de trigger — notifica quais ativos foram afetados</li>
  * </ol>
  */
 @Slf4j
@@ -28,40 +29,53 @@ public class PortfolioEventService implements CreatePortfolioEventsUseCase {
 
     private final PortfolioEventRepositoryPort repository;
     private final PortfolioEventPublisherPort publisher;
+    private final AssetDetailResolverPort assetDetailResolver;
 
     @Override
     public List<PortfolioEvent> createFromTradingNote(CreatePortfolioEventsCommand command) {
         validate(command);
 
-        // Idempotência: nota já processada?
         if (repository.existsBySourceReferenceId(command.getTradingNoteId())) {
             log.info("TradingNote {} já processada, ignorando", command.getTradingNoteId());
             return Collections.emptyList();
         }
 
-        // Fase 1: mapeamento puro — se qualquer operação falhar na validação, nenhum evento é criado
+        // Fase 1: mapeamento puro
         List<PortfolioEvent> events = command.getOperations().stream()
-                .map(op -> PortfolioEvent.fromOperation(
+                .map(op -> {
+                    var detail = assetDetailResolver.resolve(op.getAssetName());
+                    return PortfolioEvent.fromOperation(
                         command.getTradingNoteId(),
                         command.getBrokerName(),
+                        command.getBrokerDocument(),
                         command.getTradingDate(),
-                        op.getAssetName(),
+                        detail.ticker(),
+                        detail.assetType(),
                         op.getOperationType(),
                         op.getQuantity(),
                         op.getUnitPrice(),
                         op.getTotalValue(),
                         op.getFee(),
-                        command.getCurrency()))
+                        command.getCurrency());
+                })
                 .toList();
 
         // Fase 2: persistência em bulk
         List<PortfolioEvent> savedEvents = repository.saveAll(events);
 
-        // Fase 3: publicação em batch
-        List<PortfolioEventCreatedEvent> createdEvents = savedEvents.stream()
-                .map(PortfolioEventCreatedEvent::from)
+        // Fase 3: publicação de trigger simplificado
+        List<String> assetNames = savedEvents.stream()
+                .map(PortfolioEvent::getAssetName)
+                .distinct()
                 .toList();
-        publisher.publishAllCreated(createdEvents);
+
+        publisher.publishProcessed(PortfolioEventsProcessedEvent.builder()
+                .assetNames(assetNames)
+                .brokerName(command.getBrokerName())
+                .brokerDocument(command.getBrokerDocument())
+                .sourceType("TRADING_NOTE")
+                .sourceReferenceId(command.getTradingNoteId())
+                .build());
 
         log.info("Criados {} eventos de portfólio para noteId={}", savedEvents.size(), command.getTradingNoteId());
         return savedEvents;

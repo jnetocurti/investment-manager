@@ -1,10 +1,8 @@
 package com.investmentmanager.portfolioevent.domain.port.out;
 
-import com.investmentmanager.portfolioevent.domain.model.PortfolioEventCreatedEvent;
-
-import java.util.List;
+import com.investmentmanager.portfolioevent.domain.model.PortfolioEventsProcessedEvent;
 
 public interface PortfolioEventPublisherPort {
 
-    void publishAllCreated(List<PortfolioEventCreatedEvent> events);
+    void publishProcessed(PortfolioEventsProcessedEvent event);
 }

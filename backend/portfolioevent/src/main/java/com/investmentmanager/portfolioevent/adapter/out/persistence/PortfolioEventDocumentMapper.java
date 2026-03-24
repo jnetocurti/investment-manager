@@ -1,5 +1,6 @@
 package com.investmentmanager.portfolioevent.adapter.out.persistence;
 
+import com.investmentmanager.commons.domain.model.AssetType;
 import com.investmentmanager.commons.domain.model.MonetaryValue;
 import com.investmentmanager.portfolioevent.domain.model.EventSource;
 import com.investmentmanager.portfolioevent.domain.model.EventType;
@@ -15,6 +16,7 @@ class PortfolioEventDocumentMapper {
         doc.setEventType(event.getEventType().name());
         doc.setEventSource(event.getEventSource().name());
         doc.setAssetName(event.getAssetName());
+        doc.setAssetType(event.getAssetType() != null ? event.getAssetType().name() : null);
         doc.setQuantity(event.getQuantity());
         doc.setUnitPrice(event.getUnitPrice().toDisplayValue());
         doc.setTotalValue(event.getTotalValue().toDisplayValue());
@@ -22,6 +24,7 @@ class PortfolioEventDocumentMapper {
         doc.setCurrency(event.getCurrency());
         doc.setEventDate(event.getEventDate());
         doc.setBrokerName(event.getBrokerName());
+        doc.setBrokerDocument(event.getBrokerDocument());
         doc.setSourceReferenceId(event.getSourceReferenceId());
         doc.setCreatedAt(event.getCreatedAt());
         return doc;
@@ -33,6 +36,7 @@ class PortfolioEventDocumentMapper {
                 .eventType(EventType.valueOf(doc.getEventType()))
                 .eventSource(EventSource.valueOf(doc.getEventSource()))
                 .assetName(doc.getAssetName())
+                .assetType(doc.getAssetType() != null ? AssetType.valueOf(doc.getAssetType()) : null)
                 .quantity(doc.getQuantity())
                 .unitPrice(MonetaryValue.of(doc.getUnitPrice()))
                 .totalValue(MonetaryValue.of(doc.getTotalValue()))
@@ -40,6 +44,7 @@ class PortfolioEventDocumentMapper {
                 .currency(doc.getCurrency())
                 .eventDate(doc.getEventDate())
                 .brokerName(doc.getBrokerName())
+                .brokerDocument(doc.getBrokerDocument())
                 .sourceReferenceId(doc.getSourceReferenceId())
                 .createdAt(doc.getCreatedAt())
                 .build();

@@ -27,6 +27,7 @@ public class TradingNoteCreatedListener {
                     .tradingNoteId(message.getTradingNoteId())
                     .noteNumber(message.getNoteNumber())
                     .brokerName(message.getBrokerName())
+                    .brokerDocument(message.getBrokerDocument())
                     .tradingDate(message.getTradingDate())
                     .currency(message.getCurrency())
                     .operations(message.getOperations().stream()

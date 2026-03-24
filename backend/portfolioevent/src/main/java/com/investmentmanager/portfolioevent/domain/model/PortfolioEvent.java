@@ -1,5 +1,6 @@
 package com.investmentmanager.portfolioevent.domain.model;
 
+import com.investmentmanager.commons.domain.model.AssetType;
 import com.investmentmanager.commons.domain.model.MonetaryValue;
 import com.investmentmanager.commons.domain.model.OperationType;
 import lombok.Builder;
@@ -25,6 +26,7 @@ public class PortfolioEvent {
     private final EventType eventType;
     private final EventSource eventSource;
     private final String assetName;
+    private final AssetType assetType;
     private final int quantity;
     private final MonetaryValue unitPrice;
     private final MonetaryValue totalValue;
@@ -32,6 +34,7 @@ public class PortfolioEvent {
     private final String currency;
     private final LocalDate eventDate;
     private final String brokerName;
+    private final String brokerDocument;
     private final String sourceReferenceId;
     private final LocalDateTime createdAt;
 
@@ -42,8 +45,10 @@ public class PortfolioEvent {
      */
     public static PortfolioEvent fromOperation(String sourceReferenceId,
                                                String brokerName,
+                                               String brokerDocument,
                                                LocalDate eventDate,
                                                String assetName,
+                                               AssetType assetType,
                                                OperationType operationType,
                                                int quantity,
                                                BigDecimal unitPrice,
@@ -54,6 +59,7 @@ public class PortfolioEvent {
                 .eventType(EventType.valueOf(operationType.name()))
                 .eventSource(EventSource.TRADING_NOTE)
                 .assetName(assetName)
+                .assetType(assetType)
                 .quantity(quantity)
                 .unitPrice(MonetaryValue.of(unitPrice))
                 .totalValue(MonetaryValue.of(totalValue))
@@ -61,6 +67,7 @@ public class PortfolioEvent {
                 .currency(currency != null ? currency : "BRL")
                 .eventDate(eventDate)
                 .brokerName(brokerName)
+                .brokerDocument(brokerDocument)
                 .sourceReferenceId(sourceReferenceId)
                 .createdAt(LocalDateTime.now())
                 .build();
