@@ -58,6 +58,11 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
         List<AssetPositionSnapshot> allSnapshots = new ArrayList<>();
 
         for (PortfolioEventData event : events) {
+            // Subscrição pendente não impacta posição
+            if ("SUBSCRIPTION".equals(event.getEventType())) {
+                continue;
+            }
+
             // Detectar mudança de nome da corretora
             String observation = null;
             if (!event.getBrokerName().equals(previousBrokerName)) {
@@ -68,7 +73,7 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
             }
             latestBrokerName = event.getBrokerName();
 
-            if ("BUY".equals(event.getEventType())) {
+            if ("BUY".equals(event.getEventType()) || "SUBSCRIPTION_CONVERSION".equals(event.getEventType())) {
                 MonetaryValue eventCost = event.getTotalValue().add(event.getFee());
                 totalCost = totalCost.add(eventCost);
                 quantity += event.getQuantity();

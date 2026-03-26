@@ -1,0 +1,15 @@
+[
+  {
+    "subscriptionTicker": "KNCR12",
+    "targetTicker": "KNCR11",
+    "targetAssetType": "REAL_ESTATE_FUND_BRL",
+    "quantity": 36,
+    "unitPrice": 103.54,
+    "totalValue": 3727.44,
+    "fee": 0,
+    "brokerName": "NUINVEST",
+    "brokerDocument": "62.169.875/0001-79",
+    "subscriptionDate": "2024-06-15",
+    "conversionDate": "2024-07-15"
+  }
+]

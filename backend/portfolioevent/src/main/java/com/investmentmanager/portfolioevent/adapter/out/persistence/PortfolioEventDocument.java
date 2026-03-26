@@ -38,5 +38,7 @@ public class PortfolioEventDocument {
     @Indexed
     private String sourceReferenceId;
 
+    private String subscriptionTicker;
+
     private LocalDateTime createdAt;
 }

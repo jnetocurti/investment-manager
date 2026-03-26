@@ -26,6 +26,7 @@ class PortfolioEventDocumentMapper {
         doc.setBrokerName(event.getBrokerName());
         doc.setBrokerDocument(event.getBrokerDocument());
         doc.setSourceReferenceId(event.getSourceReferenceId());
+        doc.setSubscriptionTicker(event.getSubscriptionTicker());
         doc.setCreatedAt(event.getCreatedAt());
         return doc;
     }
@@ -46,6 +47,7 @@ class PortfolioEventDocumentMapper {
                 .brokerName(doc.getBrokerName())
                 .brokerDocument(doc.getBrokerDocument())
                 .sourceReferenceId(doc.getSourceReferenceId())
+                .subscriptionTicker(doc.getSubscriptionTicker())
                 .createdAt(doc.getCreatedAt())
                 .build();
     }

@@ -4,6 +4,7 @@ import com.investmentmanager.portfolioevent.domain.port.out.AssetDetailResolverP
 import com.investmentmanager.portfolioevent.domain.port.out.PortfolioEventPublisherPort;
 import com.investmentmanager.portfolioevent.domain.port.out.PortfolioEventRepositoryPort;
 import com.investmentmanager.portfolioevent.domain.service.PortfolioEventService;
+import com.investmentmanager.portfolioevent.domain.service.SubscriptionService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -16,5 +17,12 @@ public class PortfolioEventConfig {
             PortfolioEventPublisherPort publisher,
             AssetDetailResolverPort assetDetailResolver) {
         return new PortfolioEventService(repository, publisher, assetDetailResolver);
+    }
+
+    @Bean
+    public SubscriptionService subscriptionService(
+            PortfolioEventRepositoryPort repository,
+            PortfolioEventPublisherPort publisher) {
+        return new SubscriptionService(repository, publisher);
     }
 }

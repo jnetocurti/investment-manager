@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -29,5 +30,11 @@ class PortfolioEventPersistenceAdapter implements PortfolioEventRepositoryPort {
     @Override
     public boolean existsBySourceReferenceId(String sourceReferenceId) {
         return mongoRepository.existsBySourceReferenceId(sourceReferenceId);
+    }
+
+    @Override
+    public Optional<PortfolioEvent> findById(String id) {
+        return mongoRepository.findById(id)
+                .map(PortfolioEventDocumentMapper::toDomain);
     }
 }

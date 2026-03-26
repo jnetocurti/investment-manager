@@ -36,6 +36,7 @@ public class PortfolioEvent {
     private final String brokerName;
     private final String brokerDocument;
     private final String sourceReferenceId;
+    private final String subscriptionTicker;
     private final LocalDateTime createdAt;
 
     /**

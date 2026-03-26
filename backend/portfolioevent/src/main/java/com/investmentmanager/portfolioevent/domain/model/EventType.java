@@ -6,7 +6,7 @@ package com.investmentmanager.portfolioevent.domain.model;
  */
 public enum EventType {
     BUY,
-    SELL
-    // Futuros: DIVIDEND, SUBSCRIPTION, SUBSCRIPTION_CONVERSION,
-    //          SPLIT, REVERSE_SPLIT, BONUS_SHARE, RIGHTS_ISSUE
+    SELL,
+    SUBSCRIPTION,
+    SUBSCRIPTION_CONVERSION
 }
