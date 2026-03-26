@@ -4,10 +4,8 @@ import com.investmentmanager.commons.domain.model.MonetaryValue;
 import com.investmentmanager.portfolioevent.domain.model.EventSource;
 import com.investmentmanager.portfolioevent.domain.model.EventType;
 import com.investmentmanager.portfolioevent.domain.model.PortfolioEvent;
-import com.investmentmanager.portfolioevent.domain.model.PortfolioEventsProcessedEvent;
 import com.investmentmanager.portfolioevent.domain.port.in.CreateSubscriptionCommand;
 import com.investmentmanager.portfolioevent.domain.port.in.SubscriptionUseCase;
-import com.investmentmanager.portfolioevent.domain.port.out.PortfolioEventPublisherPort;
 import com.investmentmanager.portfolioevent.domain.port.out.PortfolioEventRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +19,7 @@ import java.util.List;
 public class SubscriptionService implements SubscriptionUseCase {
 
     private final PortfolioEventRepositoryPort repository;
-    private final PortfolioEventPublisherPort publisher;
+    private final PositionImpactGenerationService impactGenerationService;
 
     @Override
     public PortfolioEvent create(CreateSubscriptionCommand command) {
@@ -46,10 +44,8 @@ public class SubscriptionService implements SubscriptionUseCase {
                 .build();
 
         PortfolioEvent saved = repository.saveAll(List.of(subscription)).getFirst();
-        log.info("Subscrição criada: id={}, subTicker={}, target={}", 
-                saved.getId(), saved.getSubscriptionTicker(), saved.getAssetName());
+        impactGenerationService.generateAndPublish(List.of(saved));
 
-        // Se data de conversão informada, já converte
         if (command.getConversionDate() != null) {
             return confirmConversion(saved.getId(), command.getConversionDate());
         }
@@ -68,7 +64,6 @@ public class SubscriptionService implements SubscriptionUseCase {
                     "Evento não é uma subscrição: " + subscriptionEventId);
         }
 
-        // Verificar se já foi convertida
         if (repository.existsBySourceReferenceId(subscriptionEventId)) {
             throw new IllegalStateException(
                     "Subscrição já convertida: " + subscriptionEventId);
@@ -79,7 +74,6 @@ public class SubscriptionService implements SubscriptionUseCase {
                     "Data de conversão deve ser >= data de subscrição");
         }
 
-        // Criar evento SUBSCRIPTION_CONVERSION — funciona como BUY para o assetposition
         PortfolioEvent conversion = PortfolioEvent.builder()
                 .eventType(EventType.SUBSCRIPTION_CONVERSION)
                 .eventSource(EventSource.SUBSCRIPTION)
@@ -99,15 +93,7 @@ public class SubscriptionService implements SubscriptionUseCase {
                 .build();
 
         PortfolioEvent saved = repository.saveAll(List.of(conversion)).getFirst();
-
-        // Publicar trigger para recalcular posição do ativo final
-        publisher.publishProcessed(PortfolioEventsProcessedEvent.builder()
-                .assetNames(List.of(subscription.getAssetName()))
-                .brokerName(subscription.getBrokerName())
-                .brokerDocument(subscription.getBrokerDocument())
-                .sourceType("SUBSCRIPTION")
-                .sourceReferenceId(subscriptionEventId)
-                .build());
+        impactGenerationService.generateAndPublish(List.of(saved));
 
         log.info("Subscrição convertida: subId={}, target={}, conversionDate={}",
                 subscriptionEventId, subscription.getAssetName(), conversionDate);

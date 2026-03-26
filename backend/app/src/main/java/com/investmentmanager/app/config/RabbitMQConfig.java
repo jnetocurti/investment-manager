@@ -19,6 +19,8 @@ public class RabbitMQConfig {
     public static final String PORTFOLIOEVENT_EXCHANGE = "portfolioevent.exchange";
     public static final String PORTFOLIOEVENT_PROCESSED_QUEUE = "portfolioevent.processed.queue";
     public static final String PORTFOLIOEVENT_PROCESSED_ROUTING_KEY = "portfolioevent.processed";
+    public static final String PORTFOLIOEVENT_IMPACT_QUEUE = "portfolioevent.impact.queue";
+    public static final String PORTFOLIOEVENT_IMPACT_ROUTING_KEY = "portfolioevent.impact.created";
 
     public static final String ASSETPOSITION_EXCHANGE = "assetposition.exchange";
     public static final String ASSETPOSITION_DLQ = "assetposition.calculated.dlq";
@@ -67,6 +69,19 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(portfolioEventProcessedQueue)
                 .to(portfolioEventExchange)
                 .with(PORTFOLIOEVENT_PROCESSED_ROUTING_KEY);
+    }
+
+    @Bean
+    public Queue portfolioEventImpactQueue() {
+        return new Queue(PORTFOLIOEVENT_IMPACT_QUEUE, true);
+    }
+
+    @Bean
+    public Binding portfolioEventImpactBinding(Queue portfolioEventImpactQueue,
+                                               TopicExchange portfolioEventExchange) {
+        return BindingBuilder.bind(portfolioEventImpactQueue)
+                .to(portfolioEventExchange)
+                .with(PORTFOLIOEVENT_IMPACT_ROUTING_KEY);
     }
 
     // --- AssetPosition exchange/queue/binding (DLQ) ---
