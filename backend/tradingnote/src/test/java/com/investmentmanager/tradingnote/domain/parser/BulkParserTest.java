@@ -38,9 +38,9 @@ class BulkParserTest {
 
                     StringBuilder ops = new StringBuilder();
                     for (Operation op : note.getOperations()) {
-                        allAssetNames.add(op.getAssetName());
+                        allAssetNames.add(op.getAssetDescription());
                         ops.append(String.format("\n      %s '%s' qty=%d unit=%s total=%s fee=%s",
-                                op.getType(), op.getAssetName(), op.getQuantity(),
+                                op.getType(), op.getAssetDescription(), op.getQuantity(),
                                 op.getUnitPrice(), op.getTotalValue(), op.getFee()));
                     }
 

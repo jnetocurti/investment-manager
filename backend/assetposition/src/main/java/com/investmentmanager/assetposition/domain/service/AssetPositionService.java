@@ -28,9 +28,9 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
     private final AssetPositionHistoryRepositoryPort historyRepository;
 
     @Override
-    public AssetPosition calculatePosition(String assetName, String brokerDocument) {
+    public AssetPosition calculatePosition(String assetName, AssetType assetType, String brokerDocument) {
         List<PositionImpactData> impacts = impactQueryPort
-                .findByTickerAndBrokerDocument(assetName, brokerDocument)
+                .findByTickerAndAssetTypeAndBrokerDocument(assetName, assetType, brokerDocument)
                 .stream()
                 .sorted(Comparator
                         .comparing(PositionImpactData::getEventDate)
@@ -97,8 +97,9 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
             allSnapshots.add(snapshot);
         }
 
+        AssetType resolvedAssetType = assetType != null ? assetType : impacts.getLast().getAssetType();
         return persistPosition(assetName, brokerDocument, quantity, avgPrice, totalCost,
-                latestBrokerName, AssetType.STOCKS_BRL, allSnapshots);
+                latestBrokerName, resolvedAssetType, allSnapshots);
     }
 
     private AssetPosition persistPosition(String assetName,
@@ -116,8 +117,10 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
                 Math.max(0, allSnapshots.size() - 10), allSnapshots.size()));
         Collections.reverse(last10);
 
-        AssetPosition position = positionRepository.findByAssetNameAndBrokerDocument(assetName, brokerDocument)
+        AssetPosition position = positionRepository.findByAssetNameAndAssetTypeAndBrokerDocument(
+                        assetName, assetType, brokerDocument)
                 .map(existing -> existing.toBuilder()
+                        .assetType(assetType)
                         .brokerName(latestBrokerName)
                         .quantity(quantity)
                         .averagePrice(avgPrice)

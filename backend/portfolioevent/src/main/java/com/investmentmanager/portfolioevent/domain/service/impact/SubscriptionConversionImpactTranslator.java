@@ -21,6 +21,7 @@ public class SubscriptionConversionImpactTranslator implements PortfolioEventImp
         return List.of(PositionImpactEvent.builder()
                 .originalEventId(event.getId())
                 .ticker(event.getAssetName())
+                .assetType(event.getAssetType())
                 .impactType(PositionImpactType.INCREASE)
                 .sequence(1)
                 .quantity(event.getQuantity())

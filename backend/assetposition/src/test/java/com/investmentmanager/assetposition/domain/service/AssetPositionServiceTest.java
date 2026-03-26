@@ -4,6 +4,7 @@ import com.investmentmanager.assetposition.domain.model.PositionImpactData;
 import com.investmentmanager.assetposition.domain.port.out.AssetPositionHistoryRepositoryPort;
 import com.investmentmanager.assetposition.domain.port.out.AssetPositionRepositoryPort;
 import com.investmentmanager.assetposition.domain.port.out.PositionImpactQueryPort;
+import com.investmentmanager.commons.domain.model.AssetType;
 import com.investmentmanager.commons.domain.model.MonetaryValue;
 import org.junit.jupiter.api.Test;
 
@@ -27,11 +28,12 @@ class AssetPositionServiceTest {
 
         AssetPositionService service = new AssetPositionService(impactQueryPort, positionRepository, historyRepository);
 
-        when(impactQueryPort.findByTickerAndBrokerDocument("PETR4", "123")).thenReturn(List.of(
+        when(impactQueryPort.findByTickerAndAssetTypeAndBrokerDocument("PETR4", AssetType.STOCKS_BRL, "123")).thenReturn(List.of(
                 PositionImpactData.builder()
                         .originalEventId("e2")
                         .sequence(2)
                         .ticker("PETR4")
+                        .assetType(AssetType.STOCKS_BRL)
                         .impactType("DECREASE")
                         .quantity(40)
                         .unitPrice(MonetaryValue.of("11"))
@@ -46,6 +48,7 @@ class AssetPositionServiceTest {
                         .originalEventId("e1")
                         .sequence(1)
                         .ticker("PETR4")
+                        .assetType(AssetType.STOCKS_BRL)
                         .impactType("INCREASE")
                         .quantity(100)
                         .unitPrice(MonetaryValue.of("10"))
@@ -58,10 +61,10 @@ class AssetPositionServiceTest {
                         .build()
         ));
 
-        when(positionRepository.findByAssetNameAndBrokerDocument("PETR4", "123")).thenReturn(Optional.empty());
+        when(positionRepository.findByAssetNameAndAssetTypeAndBrokerDocument("PETR4", AssetType.STOCKS_BRL, "123")).thenReturn(Optional.empty());
         when(positionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        var position = service.calculatePosition("PETR4", "123");
+        var position = service.calculatePosition("PETR4", AssetType.STOCKS_BRL, "123");
 
         assertThat(position).isNotNull();
         assertThat(position.getQuantity()).isEqualTo(60);
@@ -80,6 +83,7 @@ class AssetPositionServiceTest {
                         .originalEventId("e1")
                         .sequence(1)
                         .ticker("ITSA4")
+                        .assetType(AssetType.STOCKS_BRL)
                         .impactType("INCREASE")
                         .quantity(100)
                         .unitPrice(MonetaryValue.of("10"))
@@ -94,6 +98,7 @@ class AssetPositionServiceTest {
                         .originalEventId("split")
                         .sequence(1)
                         .ticker("ITSA4")
+                        .assetType(AssetType.STOCKS_BRL)
                         .impactType("ADJUST")
                         .quantity(0)
                         .unitPrice(MonetaryValue.zero())
@@ -107,12 +112,12 @@ class AssetPositionServiceTest {
                         .build()
         );
 
-        when(impactQueryPort.findByTickerAndBrokerDocument("ITSA4", "123")).thenReturn(replaySet);
-        when(positionRepository.findByAssetNameAndBrokerDocument("ITSA4", "123")).thenReturn(Optional.empty());
+        when(impactQueryPort.findByTickerAndAssetTypeAndBrokerDocument("ITSA4", AssetType.STOCKS_BRL, "123")).thenReturn(replaySet);
+        when(positionRepository.findByAssetNameAndAssetTypeAndBrokerDocument("ITSA4", AssetType.STOCKS_BRL, "123")).thenReturn(Optional.empty());
         when(positionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        var first = service.calculatePosition("ITSA4", "123");
-        var second = service.calculatePosition("ITSA4", "123");
+        var first = service.calculatePosition("ITSA4", AssetType.STOCKS_BRL, "123");
+        var second = service.calculatePosition("ITSA4", AssetType.STOCKS_BRL, "123");
 
         assertThat(first.getQuantity()).isEqualTo(200);
         assertThat(second.getQuantity()).isEqualTo(200);
@@ -128,9 +133,9 @@ class AssetPositionServiceTest {
 
         AssetPositionService service = new AssetPositionService(impactQueryPort, positionRepository, historyRepository);
 
-        when(impactQueryPort.findByTickerAndBrokerDocument("ABEV3", "123")).thenReturn(List.of());
+        when(impactQueryPort.findByTickerAndAssetTypeAndBrokerDocument("ABEV3", AssetType.STOCKS_BRL, "123")).thenReturn(List.of());
 
-        var result = service.calculatePosition("ABEV3", "123");
+        var result = service.calculatePosition("ABEV3", AssetType.STOCKS_BRL, "123");
 
         assertThat(result).isNull();
         verifyNoInteractions(positionRepository);

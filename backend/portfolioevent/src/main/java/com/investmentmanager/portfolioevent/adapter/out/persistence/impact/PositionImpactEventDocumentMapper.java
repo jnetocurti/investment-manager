@@ -1,6 +1,7 @@
 package com.investmentmanager.portfolioevent.adapter.out.persistence.impact;
 
 import com.investmentmanager.commons.domain.model.MonetaryValue;
+import com.investmentmanager.commons.domain.model.AssetType;
 import com.investmentmanager.portfolioevent.domain.model.EventType;
 import com.investmentmanager.portfolioevent.domain.model.ImpactSourceType;
 import com.investmentmanager.portfolioevent.domain.model.PositionImpactEvent;
@@ -16,6 +17,7 @@ public class PositionImpactEventDocumentMapper {
         doc.setId(event.getId());
         doc.setOriginalEventId(event.getOriginalEventId());
         doc.setTicker(event.getTicker());
+        doc.setAssetType(event.getAssetType() != null ? event.getAssetType().name() : null);
         doc.setImpactType(event.getImpactType().name());
         doc.setSequence(event.getSequence());
         doc.setQuantity(event.getQuantity());
@@ -43,6 +45,7 @@ public class PositionImpactEventDocumentMapper {
                 .id(doc.getId())
                 .originalEventId(doc.getOriginalEventId())
                 .ticker(doc.getTicker())
+                .assetType(doc.getAssetType() != null ? AssetType.valueOf(doc.getAssetType()) : null)
                 .impactType(PositionImpactType.valueOf(doc.getImpactType()))
                 .sequence(doc.getSequence())
                 .quantity(doc.getQuantity())

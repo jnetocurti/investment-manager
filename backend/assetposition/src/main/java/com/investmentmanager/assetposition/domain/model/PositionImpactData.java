@@ -1,5 +1,6 @@
 package com.investmentmanager.assetposition.domain.model;
 
+import com.investmentmanager.commons.domain.model.AssetType;
 import com.investmentmanager.commons.domain.model.MonetaryValue;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,6 +16,7 @@ public class PositionImpactData {
     private final String id;
     private final String originalEventId;
     private final String ticker;
+    private final AssetType assetType;
     private final String impactType;
     private final int sequence;
     private final int quantity;
