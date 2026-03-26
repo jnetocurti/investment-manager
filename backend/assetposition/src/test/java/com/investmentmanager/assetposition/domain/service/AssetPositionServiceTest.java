@@ -1,0 +1,138 @@
+package com.investmentmanager.assetposition.domain.service;
+
+import com.investmentmanager.assetposition.domain.model.PositionImpactData;
+import com.investmentmanager.assetposition.domain.port.out.AssetPositionHistoryRepositoryPort;
+import com.investmentmanager.assetposition.domain.port.out.AssetPositionRepositoryPort;
+import com.investmentmanager.assetposition.domain.port.out.PositionImpactQueryPort;
+import com.investmentmanager.commons.domain.model.MonetaryValue;
+import org.junit.jupiter.api.Test;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+class AssetPositionServiceTest {
+
+    @Test
+    void shouldSortDeterministicallyWithoutCreatedAtInfluence() {
+        PositionImpactQueryPort impactQueryPort = mock(PositionImpactQueryPort.class);
+        AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
+        AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
+
+        AssetPositionService service = new AssetPositionService(impactQueryPort, positionRepository, historyRepository);
+
+        when(impactQueryPort.findByTickerAndBrokerDocument("PETR4", "123")).thenReturn(List.of(
+                PositionImpactData.builder()
+                        .originalEventId("e2")
+                        .sequence(2)
+                        .ticker("PETR4")
+                        .impactType("DECREASE")
+                        .quantity(40)
+                        .unitPrice(MonetaryValue.of("11"))
+                        .fee(MonetaryValue.of("1"))
+                        .eventDate(LocalDate.of(2024, 2, 10))
+                        .createdAt(LocalDateTime.of(2024, 2, 10, 12, 0))
+                        .sourceType("TRADING_NOTE")
+                        .brokerName("XP")
+                        .brokerDocument("123")
+                        .build(),
+                PositionImpactData.builder()
+                        .originalEventId("e1")
+                        .sequence(1)
+                        .ticker("PETR4")
+                        .impactType("INCREASE")
+                        .quantity(100)
+                        .unitPrice(MonetaryValue.of("10"))
+                        .fee(MonetaryValue.of("1"))
+                        .eventDate(LocalDate.of(2024, 1, 10))
+                        .createdAt(LocalDateTime.of(2024, 6, 10, 12, 0))
+                        .sourceType("TRADING_NOTE")
+                        .brokerName("XP")
+                        .brokerDocument("123")
+                        .build()
+        ));
+
+        when(positionRepository.findByAssetNameAndBrokerDocument("PETR4", "123")).thenReturn(Optional.empty());
+        when(positionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var position = service.calculatePosition("PETR4", "123");
+
+        assertThat(position).isNotNull();
+        assertThat(position.getQuantity()).isEqualTo(60);
+    }
+
+    @Test
+    void shouldReplayDeterministically() {
+        PositionImpactQueryPort impactQueryPort = mock(PositionImpactQueryPort.class);
+        AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
+        AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
+
+        AssetPositionService service = new AssetPositionService(impactQueryPort, positionRepository, historyRepository);
+
+        List<PositionImpactData> replaySet = List.of(
+                PositionImpactData.builder()
+                        .originalEventId("e1")
+                        .sequence(1)
+                        .ticker("ITSA4")
+                        .impactType("INCREASE")
+                        .quantity(100)
+                        .unitPrice(MonetaryValue.of("10"))
+                        .fee(MonetaryValue.zero())
+                        .eventDate(LocalDate.of(2024, 1, 10))
+                        .createdAt(LocalDateTime.of(2024, 1, 10, 10, 0))
+                        .sourceType("TRADING_NOTE")
+                        .brokerName("XP")
+                        .brokerDocument("123")
+                        .build(),
+                PositionImpactData.builder()
+                        .originalEventId("split")
+                        .sequence(1)
+                        .ticker("ITSA4")
+                        .impactType("ADJUST")
+                        .quantity(0)
+                        .unitPrice(MonetaryValue.zero())
+                        .fee(MonetaryValue.zero())
+                        .factor(BigDecimal.valueOf(2))
+                        .eventDate(LocalDate.of(2024, 2, 10))
+                        .createdAt(LocalDateTime.of(2024, 2, 10, 10, 0))
+                        .sourceType("CORPORATE_ACTION")
+                        .brokerName("XP")
+                        .brokerDocument("123")
+                        .build()
+        );
+
+        when(impactQueryPort.findByTickerAndBrokerDocument("ITSA4", "123")).thenReturn(replaySet);
+        when(positionRepository.findByAssetNameAndBrokerDocument("ITSA4", "123")).thenReturn(Optional.empty());
+        when(positionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var first = service.calculatePosition("ITSA4", "123");
+        var second = service.calculatePosition("ITSA4", "123");
+
+        assertThat(first.getQuantity()).isEqualTo(200);
+        assertThat(second.getQuantity()).isEqualTo(200);
+        assertThat(first.getAveragePrice().toString()).isEqualTo(second.getAveragePrice().toString());
+        verify(historyRepository, times(2)).deleteByAssetNameAndBrokerDocument("ITSA4", "123");
+    }
+
+    @Test
+    void shouldReturnNullWhenNoImpactExists() {
+        PositionImpactQueryPort impactQueryPort = mock(PositionImpactQueryPort.class);
+        AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
+        AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
+
+        AssetPositionService service = new AssetPositionService(impactQueryPort, positionRepository, historyRepository);
+
+        when(impactQueryPort.findByTickerAndBrokerDocument("ABEV3", "123")).thenReturn(List.of());
+
+        var result = service.calculatePosition("ABEV3", "123");
+
+        assertThat(result).isNull();
+        verifyNoInteractions(positionRepository);
+    }
+}

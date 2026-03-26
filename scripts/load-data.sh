@@ -100,13 +100,14 @@ docker exec "$MONGO_CONTAINER" mongosh --quiet --eval "
   db = db.getSiblingDB('$DB_NAME');
   db.trading_notes.drop();
   db.portfolio_events.drop();
+  db.position_impact_events.drop();
   db.asset_positions.drop();
   db.asset_position_history.drop();
   print('Collections removidas.');
 "
 
 # Limpar filas (ignorar erros se não existirem)
-for queue in tradingnote.created.queue portfolioevent.processed.queue assetposition.calculated.dlq portfolioevent.created.queue; do
+for queue in tradingnote.created.queue portfolioevent.processed.queue portfolioevent.impact.queue assetposition.calculated.dlq portfolioevent.created.queue; do
   docker exec "$RABBIT_CONTAINER" rabbitmqctl purge_queue "$queue" 2>/dev/null || true
 done
 echo "Filas limpas."
@@ -199,6 +200,7 @@ docker exec "$MONGO_CONTAINER" mongosh --quiet --eval "
   db = db.getSiblingDB('$DB_NAME');
   print('trading_notes:         ' + db.trading_notes.countDocuments());
   print('portfolio_events:      ' + db.portfolio_events.countDocuments());
+  print('position_impact_events: ' + db.position_impact_events.countDocuments());
   print('asset_positions:       ' + db.asset_positions.countDocuments());
   print('asset_position_history: ' + db.asset_position_history.countDocuments());
   print('');
@@ -225,4 +227,5 @@ else
 fi
 
 echo ""
+echo "Para testar replay completo: ./scripts/replay-position-impacts.sh"
 echo "Carga completa."

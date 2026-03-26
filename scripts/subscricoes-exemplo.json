@@ -9,7 +9,19 @@
     "fee": 0,
     "brokerName": "NUINVEST",
     "brokerDocument": "62.169.875/0001-79",
-    "subscriptionDate": "2024-06-15",
-    "conversionDate": "2024-07-15"
+    "subscriptionDate": "2024-06-15"
+  },
+  {
+    "subscriptionTicker": "HGLG13",
+    "targetTicker": "HGLG11",
+    "targetAssetType": "REAL_ESTATE_FUND_BRL",
+    "quantity": 20,
+    "unitPrice": 155.00,
+    "totalValue": 3100.00,
+    "fee": 0,
+    "brokerName": "NUINVEST",
+    "brokerDocument": "62.169.875/0001-79",
+    "subscriptionDate": "2024-07-01",
+    "conversionDate": "2024-07-30"
   }
 ]
