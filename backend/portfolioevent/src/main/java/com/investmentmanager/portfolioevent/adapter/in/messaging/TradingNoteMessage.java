@@ -27,7 +27,7 @@ public class TradingNoteMessage {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class OperationMessage {
-        private String assetName;
+        private String assetDescription;
         private String operationType;
         private int quantity;
         private BigDecimal unitPrice;

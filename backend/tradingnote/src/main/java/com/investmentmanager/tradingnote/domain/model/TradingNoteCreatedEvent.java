@@ -37,7 +37,7 @@ public class TradingNoteCreatedEvent {
                 .currency(note.getCurrency())
                 .operations(note.getOperations().stream()
                         .map(op -> new OperationEvent(
-                                op.getAssetName(),
+                                op.getAssetDescription(),
                                 op.getType().name(),
                                 op.getQuantity(),
                                 op.getUnitPrice().toDisplayValue(),
@@ -48,7 +48,7 @@ public class TradingNoteCreatedEvent {
     }
 
     public record OperationEvent(
-            String assetName,
+            String assetDescription,
             String operationType,
             int quantity,
             BigDecimal unitPrice,

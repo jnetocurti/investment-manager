@@ -43,7 +43,7 @@ public class PortfolioEventService implements CreatePortfolioEventsUseCase {
         // Fase 1: mapeamento puro
         List<PortfolioEvent> events = command.getOperations().stream()
                 .map(op -> {
-                    var detail = assetDetailResolver.resolve(op.getAssetName());
+                    var detail = assetDetailResolver.resolve(op.getAssetDescription());
                     return PortfolioEvent.fromOperation(
                         command.getTradingNoteId(),
                         command.getBrokerName(),
@@ -64,13 +64,15 @@ public class PortfolioEventService implements CreatePortfolioEventsUseCase {
         List<PortfolioEvent> savedEvents = repository.saveAll(events);
 
         // Fase 3: publicação de trigger simplificado
-        List<String> assetNames = savedEvents.stream()
-                .map(PortfolioEvent::getAssetName)
+        List<PortfolioEventsProcessedEvent.AssetKey> assetKeys = savedEvents.stream()
+                .map(event -> new PortfolioEventsProcessedEvent.AssetKey(
+                        event.getAssetName(),
+                        event.getAssetType() != null ? event.getAssetType().name() : null))
                 .distinct()
                 .toList();
 
         publisher.publishProcessed(PortfolioEventsProcessedEvent.builder()
-                .assetNames(assetNames)
+                .assetKeys(assetKeys)
                 .brokerName(command.getBrokerName())
                 .brokerDocument(command.getBrokerDocument())
                 .sourceType("TRADING_NOTE")

@@ -11,9 +11,17 @@ import java.util.List;
 @AllArgsConstructor
 public class PortfolioEventsProcessedMessage {
 
-    private List<String> assetNames;
+    private List<AssetKeyMessage> assetKeys;
     private String brokerName;
     private String brokerDocument;
     private String sourceType;
     private String sourceReferenceId;
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class AssetKeyMessage {
+        private String assetName;
+        private String assetType;
+    }
 }

@@ -19,7 +19,7 @@ public class PortfolioEventRabbitPublisher implements PortfolioEventPublisherPor
 
     @Override
     public void publishProcessed(PortfolioEventsProcessedEvent event) {
-        log.info("Publicando notificação para {} ativos afetados", event.getAssetNames().size());
+        log.info("Publicando notificação para {} ativos afetados", event.getAssetKeys().size());
         rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY, event);
     }
 }

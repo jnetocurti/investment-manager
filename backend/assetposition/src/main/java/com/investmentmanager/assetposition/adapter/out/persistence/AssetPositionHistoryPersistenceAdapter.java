@@ -2,6 +2,7 @@ package com.investmentmanager.assetposition.adapter.out.persistence;
 
 import com.investmentmanager.assetposition.domain.model.AssetPositionSnapshot;
 import com.investmentmanager.assetposition.domain.port.out.AssetPositionHistoryRepositoryPort;
+import com.investmentmanager.commons.domain.model.AssetType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -14,10 +15,11 @@ class AssetPositionHistoryPersistenceAdapter implements AssetPositionHistoryRepo
     private final AssetPositionHistoryMongoRepository mongoRepository;
 
     @Override
-    public void saveAll(List<AssetPositionSnapshot> snapshots, String assetName, String brokerDocument) {
+    public void saveAll(List<AssetPositionSnapshot> snapshots, String assetName, AssetType assetType, String brokerDocument) {
         var docs = snapshots.stream().map(snapshot -> {
             var doc = new AssetPositionHistoryDocument();
             doc.setAssetName(assetName);
+            doc.setAssetType(assetType != null ? assetType.name() : null);
             doc.setBrokerDocument(brokerDocument);
             doc.setQuantity(snapshot.getQuantity());
             doc.setAveragePrice(snapshot.getAveragePrice().toDisplayValue());
@@ -33,7 +35,8 @@ class AssetPositionHistoryPersistenceAdapter implements AssetPositionHistoryRepo
     }
 
     @Override
-    public void deleteByAssetNameAndBrokerDocument(String assetName, String brokerDocument) {
-        mongoRepository.deleteByAssetNameAndBrokerDocument(assetName, brokerDocument);
+    public void deleteByAssetNameAndAssetTypeAndBrokerDocument(String assetName, AssetType assetType, String brokerDocument) {
+        mongoRepository.deleteByAssetNameAndAssetTypeAndBrokerDocument(
+                assetName, assetType != null ? assetType.name() : null, brokerDocument);
     }
 }

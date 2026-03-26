@@ -28,7 +28,7 @@ class TradingNoteDocumentMapper {
 
         doc.setOperations(note.getOperations().stream()
                 .map(op -> new TradingNoteDocument.OperationDoc(
-                        op.getAssetName(), op.getType().name(), op.getQuantity(),
+                        op.getAssetDescription(), op.getType().name(), op.getQuantity(),
                         op.getUnitPrice().toDisplayValue(), op.getTotalValue().toDisplayValue(),
                         op.getFee().toDisplayValue()))
                 .toList());
@@ -43,7 +43,7 @@ class TradingNoteDocumentMapper {
     static TradingNote toDomain(TradingNoteDocument doc) {
         var operations = doc.getOperations().stream()
                 .map(op -> Operation.builder()
-                        .assetName(op.assetName())
+                        .assetDescription(op.assetDescription())
                         .type(OperationType.valueOf(op.type()))
                         .quantity(op.quantity())
                         .unitPrice(MonetaryValue.of(op.unitPrice()))

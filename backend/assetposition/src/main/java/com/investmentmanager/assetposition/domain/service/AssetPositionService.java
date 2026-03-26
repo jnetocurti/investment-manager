@@ -39,9 +39,9 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
     private final AssetPositionHistoryRepositoryPort historyRepository;
 
     @Override
-    public AssetPosition calculatePosition(String assetName, String brokerDocument) {
+    public AssetPosition calculatePosition(String assetName, AssetType assetType, String brokerDocument) {
         List<PortfolioEventData> events = eventQueryPort
-                .findByAssetNameAndBrokerDocumentOrderByEventDate(assetName, brokerDocument);
+                .findByAssetNameAndBrokerDocumentOrderByEventDate(assetName, assetType, brokerDocument);
 
         if (events.isEmpty()) {
             log.info("Nenhum evento encontrado para asset={}, brokerDoc={}", assetName, brokerDocument);
@@ -54,7 +54,7 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
         MonetaryValue totalCost = MonetaryValue.zero();
         String latestBrokerName = events.getFirst().getBrokerName();
         String previousBrokerName = latestBrokerName;
-        AssetType assetType = events.getFirst().getAssetType();
+        AssetType resolvedAssetType = events.getFirst().getAssetType();
         List<AssetPositionSnapshot> allSnapshots = new ArrayList<>();
 
         for (PortfolioEventData event : events) {
@@ -121,8 +121,8 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
         }
 
         // Persistir histórico completo (delete + reinsert)
-        historyRepository.deleteByAssetNameAndBrokerDocument(assetName, brokerDocument);
-        historyRepository.saveAll(allSnapshots, assetName, brokerDocument);
+        historyRepository.deleteByAssetNameAndAssetTypeAndBrokerDocument(assetName, resolvedAssetType, brokerDocument);
+        historyRepository.saveAll(allSnapshots, assetName, resolvedAssetType, brokerDocument);
 
         // Últimos 10 snapshots (mais recente primeiro)
         List<AssetPositionSnapshot> last10 = new ArrayList<>(allSnapshots.subList(
@@ -134,8 +134,10 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
         final MonetaryValue finalTotalCost = totalCost;
         final String finalBrokerName = latestBrokerName;
 
-        AssetPosition position = positionRepository.findByAssetNameAndBrokerDocument(assetName, brokerDocument)
+        AssetPosition position = positionRepository.findByAssetNameAndAssetTypeAndBrokerDocument(
+                        assetName, resolvedAssetType, brokerDocument)
                 .map(existing -> existing.toBuilder()
+                        .assetType(resolvedAssetType)
                         .brokerName(finalBrokerName)
                         .quantity(finalQuantity)
                         .averagePrice(finalAvgPrice)
@@ -145,7 +147,7 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
                         .build())
                 .orElse(AssetPosition.builder()
                         .assetName(assetName)
-                        .assetType(assetType)
+                        .assetType(resolvedAssetType)
                         .brokerName(finalBrokerName)
                         .brokerDocument(brokerDocument)
                         .quantity(finalQuantity)

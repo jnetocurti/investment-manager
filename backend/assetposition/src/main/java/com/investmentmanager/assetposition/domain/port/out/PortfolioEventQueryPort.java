@@ -1,6 +1,7 @@
 package com.investmentmanager.assetposition.domain.port.out;
 
 import com.investmentmanager.assetposition.domain.model.PortfolioEventData;
+import com.investmentmanager.commons.domain.model.AssetType;
 
 import java.util.List;
 
@@ -12,5 +13,5 @@ import java.util.List;
 public interface PortfolioEventQueryPort {
 
     List<PortfolioEventData> findByAssetNameAndBrokerDocumentOrderByEventDate(
-            String assetName, String brokerDocument);
+            String assetName, AssetType assetType, String brokerDocument);
 }

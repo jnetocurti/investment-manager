@@ -23,9 +23,10 @@ class PortfolioEventQueryAdapter implements PortfolioEventQueryPort {
 
     @Override
     public List<PortfolioEventData> findByAssetNameAndBrokerDocumentOrderByEventDate(
-            String assetName, String brokerDocument) {
+            String assetName, AssetType assetType, String brokerDocument) {
         return portfolioEventRepository
-                .findByAssetNameAndBrokerDocumentOrderByEventDateAsc(assetName, brokerDocument)
+                .findByAssetNameAndAssetTypeAndBrokerDocumentOrderByEventDateAsc(
+                        assetName, assetType != null ? assetType.name() : null, brokerDocument)
                 .stream()
                 .map(doc -> PortfolioEventData.builder()
                         .id(doc.getId())

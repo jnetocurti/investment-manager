@@ -102,7 +102,9 @@ public class SubscriptionService implements SubscriptionUseCase {
 
         // Publicar trigger para recalcular posição do ativo final
         publisher.publishProcessed(PortfolioEventsProcessedEvent.builder()
-                .assetNames(List.of(subscription.getAssetName()))
+                .assetKeys(List.of(new PortfolioEventsProcessedEvent.AssetKey(
+                        subscription.getAssetName(),
+                        subscription.getAssetType() != null ? subscription.getAssetType().name() : null)))
                 .brokerName(subscription.getBrokerName())
                 .brokerDocument(subscription.getBrokerDocument())
                 .sourceType("SUBSCRIPTION")

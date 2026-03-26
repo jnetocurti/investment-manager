@@ -13,4 +13,7 @@ public interface PortfolioEventMongoRepository extends MongoRepository<Portfolio
 
     List<PortfolioEventDocument> findByAssetNameAndBrokerDocumentOrderByEventDateAsc(
             String assetName, String brokerDocument);
+
+    List<PortfolioEventDocument> findByAssetNameAndAssetTypeAndBrokerDocumentOrderByEventDateAsc(
+            String assetName, String assetType, String brokerDocument);
 }

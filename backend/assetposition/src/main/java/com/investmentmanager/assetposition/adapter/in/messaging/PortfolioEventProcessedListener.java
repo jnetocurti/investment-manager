@@ -2,6 +2,7 @@ package com.investmentmanager.assetposition.adapter.in.messaging;
 
 import com.investmentmanager.assetposition.adapter.out.messaging.AssetPositionDlqPublisher;
 import com.investmentmanager.assetposition.domain.port.in.CalculateAssetPositionUseCase;
+import com.investmentmanager.commons.domain.model.AssetType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -18,11 +19,15 @@ public class PortfolioEventProcessedListener {
     @RabbitListener(queues = "portfolioevent.processed.queue")
     public void onPortfolioEventsProcessed(PortfolioEventsProcessedMessage message) {
         log.info("Recebido trigger de processamento: {} ativos, broker={} ({})",
-                message.getAssetNames().size(), message.getBrokerName(), message.getBrokerDocument());
+                message.getAssetKeys().size(), message.getBrokerName(), message.getBrokerDocument());
 
-        for (String assetName : message.getAssetNames()) {
+        for (PortfolioEventsProcessedMessage.AssetKeyMessage assetKey : message.getAssetKeys()) {
+            String assetName = assetKey.getAssetName();
             try {
-                useCase.calculatePosition(assetName, message.getBrokerDocument());
+                AssetType assetType = assetKey.getAssetType() != null
+                        ? AssetType.valueOf(assetKey.getAssetType())
+                        : null;
+                useCase.calculatePosition(assetName, assetType, message.getBrokerDocument());
             } catch (Exception e) {
                 log.error("Erro ao calcular posição: asset={}, brokerDoc={}",
                         assetName, message.getBrokerDocument(), e);
