@@ -4,6 +4,7 @@ import com.investmentmanager.assetposition.domain.model.PositionImpactData;
 import com.investmentmanager.assetposition.domain.port.out.PositionImpactQueryPort;
 import com.investmentmanager.commons.domain.model.AssetType;
 import com.investmentmanager.commons.domain.model.MonetaryValue;
+import com.investmentmanager.portfolioevent.adapter.out.persistence.impact.PositionImpactEventDocument;
 import com.investmentmanager.portfolioevent.adapter.out.persistence.impact.PositionImpactEventMongoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -21,10 +22,18 @@ class PositionImpactQueryAdapter implements PositionImpactQueryPort {
             String ticker,
             AssetType assetType,
             String brokerDocument) {
-        return repository.findByTickerAndBrokerDocumentOrderByEventDateAscSequenceAsc(
-                        ticker,
-                        assetType != null ? assetType.name() : null,
-                        brokerDocument)
+        List<PositionImpactEventDocument> docs =
+                assetType != null
+                        ? repository.findByTickerAndAssetTypeAndBrokerDocumentOrderByEventDateAscSequenceAsc(
+                                ticker, assetType.name(), brokerDocument)
+                        : repository.findByTickerAndBrokerDocumentOrderByEventDateAscSequenceAsc(
+                                ticker, brokerDocument);
+
+        if (docs.isEmpty() && assetType != null) {
+            docs = repository.findByTickerAndBrokerDocumentOrderByEventDateAscSequenceAsc(ticker, brokerDocument);
+        }
+
+        return docs
                 .stream()
                 .map(doc -> PositionImpactData.builder()
                         .id(doc.getId())
