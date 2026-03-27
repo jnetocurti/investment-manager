@@ -23,7 +23,7 @@ public class CreatePortfolioEventsCommand {
     @Value
     @Builder
     public static class OperationData {
-        String assetName;
+        String assetDescription;
         OperationType operationType;
         int quantity;
         BigDecimal unitPrice;

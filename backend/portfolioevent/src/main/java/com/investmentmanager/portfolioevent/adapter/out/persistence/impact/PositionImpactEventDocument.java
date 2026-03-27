@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @Document(collection = "position_impact_events")
 @CompoundIndexes({
         @CompoundIndex(name = "uk_impact_idempotency", def = "{'originalEventId': 1, 'impactType': 1, 'sequence': 1}", unique = true),
-        @CompoundIndex(name = "idx_ticker_broker_date_seq", def = "{'ticker': 1, 'brokerDocument': 1, 'eventDate': 1, 'sequence': 1}")
+        @CompoundIndex(name = "idx_ticker_type_broker_date_seq", def = "{'ticker': 1, 'assetType': 1, 'brokerDocument': 1, 'eventDate': 1, 'sequence': 1}")
 })
 public class PositionImpactEventDocument {
 
@@ -23,6 +23,7 @@ public class PositionImpactEventDocument {
 
     private String originalEventId;
     private String ticker;
+    private String assetType;
     private String impactType;
     private int sequence;
     private int quantity;

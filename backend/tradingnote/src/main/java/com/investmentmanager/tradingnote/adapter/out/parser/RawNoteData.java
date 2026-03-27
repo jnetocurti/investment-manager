@@ -16,7 +16,7 @@ record RawNoteData(
     record RawFee(String description, String value) {}
 
     record RawOperation(
-            String assetName,
+            String assetDescription,
             String operationType,
             int quantity,
             String unitPrice,

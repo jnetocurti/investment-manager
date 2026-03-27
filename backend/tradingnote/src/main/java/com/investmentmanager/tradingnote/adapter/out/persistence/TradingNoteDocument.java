@@ -43,7 +43,7 @@ public class TradingNoteDocument {
     private String fileReference;
     private String currency;
 
-    public record OperationDoc(String assetName, String type, int quantity,
+    public record OperationDoc(String assetDescription, String type, int quantity,
                                 BigDecimal unitPrice, BigDecimal totalValue, BigDecimal fee) {}
 
     public record FeeDoc(String description, BigDecimal value) {}

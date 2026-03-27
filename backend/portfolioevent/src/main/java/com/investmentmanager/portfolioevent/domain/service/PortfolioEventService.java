@@ -31,7 +31,7 @@ public class PortfolioEventService implements CreatePortfolioEventsUseCase {
 
         List<PortfolioEvent> events = command.getOperations().stream()
                 .map(op -> {
-                    var detail = assetDetailResolver.resolve(op.getAssetName());
+                    var detail = assetDetailResolver.resolve(op.getAssetDescription());
                     return PortfolioEvent.fromOperation(
                             command.getTradingNoteId(),
                             command.getBrokerName(),

@@ -32,7 +32,7 @@ public class TradingNoteCreatedListener {
                     .currency(message.getCurrency())
                     .operations(message.getOperations().stream()
                             .map(op -> CreatePortfolioEventsCommand.OperationData.builder()
-                                    .assetName(op.getAssetName())
+                                    .assetDescription(op.getAssetDescription())
                                     .operationType(OperationType.valueOf(op.getOperationType()))
                                     .quantity(op.getQuantity())
                                     .unitPrice(op.getUnitPrice())

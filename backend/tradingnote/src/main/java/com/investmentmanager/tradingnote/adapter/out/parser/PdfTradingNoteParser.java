@@ -81,7 +81,7 @@ public class PdfTradingNoteParser implements TradingNoteParserPort {
             totalValue = unitPrice.multiply(raw.quantity());
         }
         return Operation.builder()
-                .assetName(raw.assetName())
+                .assetDescription(raw.assetDescription())
                 .type(type)
                 .quantity(raw.quantity())
                 .unitPrice(unitPrice)

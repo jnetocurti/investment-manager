@@ -21,6 +21,7 @@ public class SellEventImpactTranslator implements PortfolioEventImpactTranslator
         return List.of(PositionImpactEvent.builder()
                 .originalEventId(event.getId())
                 .ticker(event.getAssetName())
+                .assetType(event.getAssetType())
                 .impactType(PositionImpactType.DECREASE)
                 .sequence(1)
                 .quantity(event.getQuantity())

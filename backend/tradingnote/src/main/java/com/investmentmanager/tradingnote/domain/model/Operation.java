@@ -14,7 +14,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class Operation {
 
-    private String assetName;
+    private String assetDescription;
     private OperationType type;
     private int quantity;
     private MonetaryValue unitPrice;
