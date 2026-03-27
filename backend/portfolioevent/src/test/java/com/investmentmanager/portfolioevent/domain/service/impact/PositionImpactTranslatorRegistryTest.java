@@ -56,7 +56,7 @@ class PositionImpactTranslatorRegistryTest {
         PositionImpactEvent impact = PositionImpactEvent.builder()
                 .originalEventId("x")
                 .ticker("ITSA4")
-                .impactType(com.investmentmanager.portfolioevent.domain.model.PositionImpactType.ADJUST)
+                .impactType(com.investmentmanager.commons.domain.model.PositionImpactType.ADJUST)
                 .sequence(1)
                 .quantity(10)
                 .unitPrice(MonetaryValue.of("10"))

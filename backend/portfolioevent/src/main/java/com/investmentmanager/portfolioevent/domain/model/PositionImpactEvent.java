@@ -2,6 +2,7 @@ package com.investmentmanager.portfolioevent.domain.model;
 
 import com.investmentmanager.commons.domain.model.AssetType;
 import com.investmentmanager.commons.domain.model.MonetaryValue;
+import com.investmentmanager.commons.domain.model.PositionImpactType;
 import lombok.Builder;
 import lombok.Getter;
 
