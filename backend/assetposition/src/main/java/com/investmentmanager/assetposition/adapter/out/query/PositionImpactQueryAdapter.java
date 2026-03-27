@@ -23,15 +23,8 @@ class PositionImpactQueryAdapter implements PositionImpactQueryPort {
             AssetType assetType,
             String brokerDocument) {
         List<PositionImpactEventDocument> docs =
-                assetType != null
-                        ? repository.findByTickerAndAssetTypeAndBrokerDocumentOrderByEventDateAscSequenceAsc(
-                                ticker, assetType.name(), brokerDocument)
-                        : repository.findByTickerAndBrokerDocumentOrderByEventDateAscSequenceAsc(
-                                ticker, brokerDocument);
-
-        if (docs.isEmpty() && assetType != null) {
-            docs = repository.findByTickerAndBrokerDocumentOrderByEventDateAscSequenceAsc(ticker, brokerDocument);
-        }
+                repository.findByTickerAndAssetTypeAndBrokerDocumentOrderByEventDateAscSequenceAsc(
+                        ticker, assetType != null ? assetType.name() : null, brokerDocument);
 
         return docs
                 .stream()

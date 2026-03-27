@@ -12,8 +12,4 @@ public interface PositionImpactEventMongoRepository extends MongoRepository<Posi
             String ticker,
             String assetType,
             String brokerDocument);
-
-    List<PositionImpactEventDocument> findByTickerAndBrokerDocumentOrderByEventDateAscSequenceAsc(
-            String ticker,
-            String brokerDocument);
 }
