@@ -39,6 +39,8 @@ public class PortfolioEventDocument {
     private String sourceReferenceId;
 
     private String subscriptionTicker;
+    private BigDecimal ratioNumerator;
+    private BigDecimal ratioDenominator;
 
     private LocalDateTime createdAt;
 }

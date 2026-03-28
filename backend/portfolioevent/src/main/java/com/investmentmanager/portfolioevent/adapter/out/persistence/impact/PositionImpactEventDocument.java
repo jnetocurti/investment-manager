@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Data
 @Document(collection = "position_impact_events")
@@ -29,7 +30,8 @@ public class PositionImpactEventDocument {
     private int quantity;
     private BigDecimal unitPrice;
     private BigDecimal fee;
-    private BigDecimal factor;
+    private String adjustmentType;
+    private Map<String, Object> adjustmentPayload;
     private LocalDate eventDate;
     private String originType;
     private String sourceType;

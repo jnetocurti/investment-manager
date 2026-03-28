@@ -4,9 +4,14 @@ import com.investmentmanager.assetposition.domain.model.PositionImpactData;
 import com.investmentmanager.assetposition.domain.port.out.AssetPositionHistoryRepositoryPort;
 import com.investmentmanager.assetposition.domain.port.out.AssetPositionRepositoryPort;
 import com.investmentmanager.assetposition.domain.port.out.PositionImpactQueryPort;
+import com.investmentmanager.assetposition.domain.service.behavior.*;
 import com.investmentmanager.commons.domain.model.AssetType;
 import com.investmentmanager.commons.domain.model.MonetaryValue;
 import com.investmentmanager.commons.domain.model.PositionImpactType;
+import com.investmentmanager.commons.domain.model.adjustment.AdjustmentPayload;
+import com.investmentmanager.commons.domain.model.adjustment.AdjustmentType;
+import com.investmentmanager.commons.domain.model.adjustment.FactorAdjustmentPayload;
+import com.investmentmanager.commons.domain.model.adjustment.Ratio;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -21,13 +26,22 @@ import static org.mockito.Mockito.*;
 
 class AssetPositionServiceTest {
 
+    private PositionBehaviorResolver defaultResolver() {
+        return new PositionBehaviorRegistry(List.of(
+                new IncreaseBehavior(),
+                new DecreaseBehavior(),
+                new FactorAdjustBehavior(),
+                new AbsoluteAdjustBehavior()
+        ));
+    }
+
     @Test
     void shouldCalculateWhenImpactsComeOrderedFromQuery() {
         PositionImpactQueryPort impactQueryPort = mock(PositionImpactQueryPort.class);
         AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
         AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
 
-        AssetPositionService service = new AssetPositionService(impactQueryPort, positionRepository, historyRepository);
+        AssetPositionService service = new AssetPositionService(impactQueryPort, positionRepository, historyRepository, defaultResolver());
 
         when(impactQueryPort.findByTickerAndAssetTypeAndBrokerDocument("PETR4", AssetType.STOCKS_BRL, "123")).thenReturn(List.of(
                 PositionImpactData.builder()
@@ -78,7 +92,7 @@ class AssetPositionServiceTest {
         AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
         AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
 
-        AssetPositionService service = new AssetPositionService(impactQueryPort, positionRepository, historyRepository);
+        AssetPositionService service = new AssetPositionService(impactQueryPort, positionRepository, historyRepository, defaultResolver());
 
         List<PositionImpactData> replaySet = List.of(
                 PositionImpactData.builder()
@@ -105,7 +119,8 @@ class AssetPositionServiceTest {
                         .quantity(0)
                         .unitPrice(MonetaryValue.zero())
                         .fee(MonetaryValue.zero())
-                        .factor(BigDecimal.valueOf(2))
+                        .adjustmentType(AdjustmentType.FACTOR)
+                        .adjustmentPayload(factorPayload("2", "1"))
                         .eventDate(LocalDate.of(2024, 2, 10))
                         .createdAt(LocalDateTime.of(2024, 2, 10, 10, 0))
                         .sourceType("CORPORATE_ACTION")
@@ -133,7 +148,7 @@ class AssetPositionServiceTest {
         AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
         AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
 
-        AssetPositionService service = new AssetPositionService(impactQueryPort, positionRepository, historyRepository);
+        AssetPositionService service = new AssetPositionService(impactQueryPort, positionRepository, historyRepository, defaultResolver());
 
         when(impactQueryPort.findByTickerAndAssetTypeAndBrokerDocument("ABEV3", AssetType.STOCKS_BRL, "123")).thenReturn(List.of());
 
@@ -148,7 +163,7 @@ class AssetPositionServiceTest {
         PositionImpactQueryPort impactQueryPort = mock(PositionImpactQueryPort.class);
         AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
         AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
-        AssetPositionService service = new AssetPositionService(impactQueryPort, positionRepository, historyRepository);
+        AssetPositionService service = new AssetPositionService(impactQueryPort, positionRepository, historyRepository, defaultResolver());
 
         List<PositionImpactData> impacts = List.of(
                 impact("e1", PositionImpactType.INCREASE, 100, "10", "0", null, LocalDate.of(2024, 1, 2), 1),
@@ -177,12 +192,12 @@ class AssetPositionServiceTest {
         PositionImpactQueryPort impactQueryPort = mock(PositionImpactQueryPort.class);
         AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
         AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
-        AssetPositionService service = new AssetPositionService(impactQueryPort, positionRepository, historyRepository);
+        AssetPositionService service = new AssetPositionService(impactQueryPort, positionRepository, historyRepository, defaultResolver());
 
         List<PositionImpactData> impacts = List.of(
                 impact("a1", PositionImpactType.INCREASE, 1000, "1.00", "0", null, LocalDate.of(2024, 3, 1), 1),
                 impact("a2", PositionImpactType.INCREASE, 200, "1.10", "0", null, LocalDate.of(2024, 3, 2), 2),
-                impact("a3", PositionImpactType.ADJUST, 0, "0", "0", new BigDecimal("0.1"), LocalDate.of(2024, 3, 5), 3),
+                impact("a3", PositionImpactType.ADJUST, 0, "0", "0", factorPayload("1", "10"), LocalDate.of(2024, 3, 5), 3),
                 impact("a4", PositionImpactType.INCREASE, 30, "14", "0", null, LocalDate.of(2024, 3, 10), 4),
                 impact("a5", PositionImpactType.DECREASE, 50, "0", "0", null, LocalDate.of(2024, 3, 11), 5)
         );
@@ -205,7 +220,7 @@ class AssetPositionServiceTest {
                                       int quantity,
                                       String unitPrice,
                                       String fee,
-                                      BigDecimal factor,
+                                      AdjustmentPayload adjustmentPayload,
                                       LocalDate eventDate,
                                       int sequence) {
         return PositionImpactData.builder()
@@ -217,13 +232,23 @@ class AssetPositionServiceTest {
                 .quantity(quantity)
                 .unitPrice(MonetaryValue.of(unitPrice))
                 .fee(MonetaryValue.of(fee))
-                .factor(factor)
+                .adjustmentType(adjustmentPayload != null ? adjustmentPayload.getType() : null)
+                .adjustmentPayload(adjustmentPayload)
                 .eventDate(eventDate)
                 .createdAt(LocalDateTime.of(2024, 1, 1, 10, 0))
                 .sourceType("TRADING_NOTE")
                 .brokerName("XP")
                 .brokerDocument("123")
                 .sourceReferenceId(id + ":" + sequence)
+                .build();
+    }
+
+    private FactorAdjustmentPayload factorPayload(String numerator, String denominator) {
+        return FactorAdjustmentPayload.builder()
+                .ratio(Ratio.builder()
+                        .numerator(new BigDecimal(numerator))
+                        .denominator(new BigDecimal(denominator))
+                        .build())
                 .build();
     }
 }

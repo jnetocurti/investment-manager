@@ -2,6 +2,9 @@ package com.investmentmanager.portfolioevent.domain.service.impact;
 
 import com.investmentmanager.commons.domain.model.AssetType;
 import com.investmentmanager.commons.domain.model.MonetaryValue;
+import com.investmentmanager.commons.domain.model.adjustment.AdjustmentType;
+import com.investmentmanager.commons.domain.model.adjustment.FactorAdjustmentPayload;
+import com.investmentmanager.commons.domain.model.adjustment.Ratio;
 import com.investmentmanager.portfolioevent.domain.model.EventSource;
 import com.investmentmanager.portfolioevent.domain.model.EventType;
 import com.investmentmanager.portfolioevent.domain.model.PortfolioEvent;
@@ -22,7 +25,8 @@ class PositionImpactTranslatorRegistryTest {
     void shouldTranslateBuyIntoImpactWithSchemaVersionAndSequence() {
         PositionImpactTranslatorRegistry registry = new PositionImpactTranslatorRegistry(
                 List.of(new BuyEventImpactTranslator(), new SellEventImpactTranslator(),
-                        new SubscriptionPendingImpactTranslator(), new SubscriptionConversionImpactTranslator()));
+                        new SubscriptionPendingImpactTranslator(), new SubscriptionConversionImpactTranslator(),
+                        new SplitEventImpactTranslator(), new ReverseSplitEventImpactTranslator()));
 
         PortfolioEvent buy = PortfolioEvent.builder()
                 .id("event-1")
@@ -52,7 +56,7 @@ class PositionImpactTranslatorRegistryTest {
     }
 
     @Test
-    void shouldFailWhenFactorIsInvalid() {
+    void shouldFailWhenAdjustPayloadIsMissing() {
         PositionImpactEvent impact = PositionImpactEvent.builder()
                 .originalEventId("x")
                 .ticker("ITSA4")
@@ -61,7 +65,6 @@ class PositionImpactTranslatorRegistryTest {
                 .quantity(10)
                 .unitPrice(MonetaryValue.of("10"))
                 .fee(MonetaryValue.zero())
-                .factor(BigDecimal.ZERO)
                 .eventDate(LocalDate.of(2024, 1, 1))
                 .originType(EventType.BUY)
                 .sourceType(com.investmentmanager.portfolioevent.domain.model.ImpactSourceType.CORPORATE_ACTION)
@@ -74,6 +77,36 @@ class PositionImpactTranslatorRegistryTest {
 
         assertThatThrownBy(impact::validate)
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Factor must be > 0");
+                .hasMessageContaining("requires typed adjustment payload");
+    }
+
+    @Test
+    void shouldValidateTypedFactorAdjustment() {
+        PositionImpactEvent impact = PositionImpactEvent.builder()
+                .originalEventId("x")
+                .ticker("ITSA4")
+                .impactType(com.investmentmanager.commons.domain.model.PositionImpactType.ADJUST)
+                .sequence(1)
+                .quantity(0)
+                .unitPrice(MonetaryValue.zero())
+                .fee(MonetaryValue.zero())
+                .adjustmentType(AdjustmentType.FACTOR)
+                .adjustmentPayload(FactorAdjustmentPayload.builder()
+                        .ratio(Ratio.builder()
+                                .numerator(BigDecimal.valueOf(2))
+                                .denominator(BigDecimal.ONE)
+                                .build())
+                        .build())
+                .eventDate(LocalDate.of(2024, 1, 1))
+                .originType(EventType.SPLIT)
+                .sourceType(com.investmentmanager.portfolioevent.domain.model.ImpactSourceType.CORPORATE_ACTION)
+                .brokerName("XP")
+                .brokerDocument("123")
+                .sourceReferenceId("s")
+                .schemaVersion(2)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        impact.validate();
     }
 }

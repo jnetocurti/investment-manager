@@ -3,10 +3,11 @@ package com.investmentmanager.assetposition.domain.model;
 import com.investmentmanager.commons.domain.model.AssetType;
 import com.investmentmanager.commons.domain.model.MonetaryValue;
 import com.investmentmanager.commons.domain.model.PositionImpactType;
+import com.investmentmanager.commons.domain.model.adjustment.AdjustmentPayload;
+import com.investmentmanager.commons.domain.model.adjustment.AdjustmentType;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -23,7 +24,8 @@ public class PositionImpactData {
     private final int quantity;
     private final MonetaryValue unitPrice;
     private final MonetaryValue fee;
-    private final BigDecimal factor;
+    private final AdjustmentType adjustmentType;
+    private final AdjustmentPayload adjustmentPayload;
     private final LocalDate eventDate;
     private final String originType;
     private final String sourceType;

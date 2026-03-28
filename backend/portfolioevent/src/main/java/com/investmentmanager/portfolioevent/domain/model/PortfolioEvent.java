@@ -3,6 +3,7 @@ package com.investmentmanager.portfolioevent.domain.model;
 import com.investmentmanager.commons.domain.model.AssetType;
 import com.investmentmanager.commons.domain.model.MonetaryValue;
 import com.investmentmanager.commons.domain.model.OperationType;
+import com.investmentmanager.commons.domain.model.adjustment.Ratio;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -37,6 +38,7 @@ public class PortfolioEvent {
     private final String brokerDocument;
     private final String sourceReferenceId;
     private final String subscriptionTicker;
+    private final Ratio ratio;
     private final LocalDateTime createdAt;
 
     /**
@@ -84,11 +86,20 @@ public class PortfolioEvent {
             throw new IllegalArgumentException("EventSource is required");
         if (assetName == null || assetName.isBlank())
             throw new IllegalArgumentException("Asset name is required");
-        if (quantity <= 0)
-            throw new IllegalArgumentException("Quantity must be > 0");
         if (eventDate == null)
             throw new IllegalArgumentException("Event date is required");
         if (sourceReferenceId == null || sourceReferenceId.isBlank())
             throw new IllegalArgumentException("Source reference ID is required");
+
+        if (eventType == EventType.SPLIT || eventType == EventType.REVERSE_SPLIT) {
+            if (ratio == null) {
+                throw new IllegalArgumentException("Ratio is required for split/reverse split events");
+            }
+            ratio.toFactor();
+            return;
+        }
+
+        if (quantity <= 0)
+            throw new IllegalArgumentException("Quantity must be > 0");
     }
 }

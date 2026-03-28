@@ -1,18 +1,15 @@
 package com.investmentmanager.portfolioevent.adapter.config;
 
+import com.investmentmanager.portfolioevent.domain.port.in.CorporateActionUseCase;
 import com.investmentmanager.portfolioevent.domain.port.out.AssetDetailResolverPort;
 import com.investmentmanager.portfolioevent.domain.port.out.PortfolioEventRepositoryPort;
 import com.investmentmanager.portfolioevent.domain.port.out.PositionImpactEventPublisherPort;
 import com.investmentmanager.portfolioevent.domain.port.out.PositionImpactEventRepositoryPort;
+import com.investmentmanager.portfolioevent.domain.service.CorporateActionService;
 import com.investmentmanager.portfolioevent.domain.service.PortfolioEventService;
 import com.investmentmanager.portfolioevent.domain.service.PositionImpactGenerationService;
 import com.investmentmanager.portfolioevent.domain.service.SubscriptionService;
-import com.investmentmanager.portfolioevent.domain.service.impact.BuyEventImpactTranslator;
-import com.investmentmanager.portfolioevent.domain.service.impact.PortfolioEventImpactTranslator;
-import com.investmentmanager.portfolioevent.domain.service.impact.PositionImpactTranslatorRegistry;
-import com.investmentmanager.portfolioevent.domain.service.impact.SellEventImpactTranslator;
-import com.investmentmanager.portfolioevent.domain.service.impact.SubscriptionConversionImpactTranslator;
-import com.investmentmanager.portfolioevent.domain.service.impact.SubscriptionPendingImpactTranslator;
+import com.investmentmanager.portfolioevent.domain.service.impact.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -42,16 +39,30 @@ public class PortfolioEventConfig {
     }
 
     @Bean
+    public SplitEventImpactTranslator splitEventImpactTranslator() {
+        return new SplitEventImpactTranslator();
+    }
+
+    @Bean
+    public ReverseSplitEventImpactTranslator reverseSplitEventImpactTranslator() {
+        return new ReverseSplitEventImpactTranslator();
+    }
+
+    @Bean
     public PositionImpactTranslatorRegistry positionImpactTranslatorRegistry(
             BuyEventImpactTranslator buyTranslator,
             SellEventImpactTranslator sellTranslator,
             SubscriptionPendingImpactTranslator pendingTranslator,
-            SubscriptionConversionImpactTranslator conversionTranslator) {
+            SubscriptionConversionImpactTranslator conversionTranslator,
+            SplitEventImpactTranslator splitTranslator,
+            ReverseSplitEventImpactTranslator reverseSplitTranslator) {
         return new PositionImpactTranslatorRegistry(List.<PortfolioEventImpactTranslator>of(
                 buyTranslator,
                 sellTranslator,
                 pendingTranslator,
-                conversionTranslator));
+                conversionTranslator,
+                splitTranslator,
+                reverseSplitTranslator));
     }
 
     @Bean
@@ -75,5 +86,12 @@ public class PortfolioEventConfig {
             PortfolioEventRepositoryPort repository,
             PositionImpactGenerationService impactGenerationService) {
         return new SubscriptionService(repository, impactGenerationService);
+    }
+
+    @Bean
+    public CorporateActionUseCase corporateActionUseCase(
+            PortfolioEventRepositoryPort repository,
+            PositionImpactGenerationService impactGenerationService) {
+        return new CorporateActionService(repository, impactGenerationService);
     }
 }

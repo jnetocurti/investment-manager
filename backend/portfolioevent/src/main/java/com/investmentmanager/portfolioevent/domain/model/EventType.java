@@ -8,5 +8,7 @@ public enum EventType {
     BUY,
     SELL,
     SUBSCRIPTION,
-    SUBSCRIPTION_CONVERSION
+    SUBSCRIPTION_CONVERSION,
+    SPLIT,
+    REVERSE_SPLIT
 }

@@ -1,30 +1,13 @@
 #!/bin/bash
 #
-# Carga completa: notas de negociação + subscrições
+# Carga completa: notas de negociação + subscrições + ações corporativas
 #
 # Uso:
-#   ./scripts/load-data.sh <diretório-notas> [arquivo-subscricoes.json]
+#   ./scripts/load-data.sh <diretório-notas> [arquivo-subscricoes.json] [arquivo-corporate-actions.json]
 #
 # Exemplos:
 #   ./scripts/load-data.sh ~/notas_negociacao
-#   ./scripts/load-data.sh ~/notas_negociacao subscricoes.json
-#
-# O arquivo de subscrições é um JSON array:
-# [
-#   {
-#     "subscriptionTicker": "KNCR12",
-#     "targetTicker": "KNCR11",
-#     "targetAssetType": "REAL_ESTATE_FUND_BRL",
-#     "quantity": 36,
-#     "unitPrice": 103.54,
-#     "totalValue": 3727.44,
-#     "fee": 0,
-#     "brokerName": "NUINVEST",
-#     "brokerDocument": "62.169.875/0001-79",
-#     "subscriptionDate": "2024-06-15",
-#     "conversionDate": "2024-07-15"
-#   }
-# ]
+#   ./scripts/load-data.sh ~/notas_negociacao subscricoes.json corporate-actions.json
 
 set -euo pipefail
 
@@ -37,9 +20,10 @@ DB_NAME="investmentmanager"
 
 NOTES_DIR="${1:-}"
 SUBSCRIPTIONS_FILE="${2:-}"
+CORPORATE_ACTIONS_FILE="${3:-}"
 
 if [ -z "$NOTES_DIR" ]; then
-  echo "Uso: $0 <diretório-notas> [arquivo-subscricoes.json]"
+  echo "Uso: $0 <diretório-notas> [arquivo-subscricoes.json] [arquivo-corporate-actions.json]"
   exit 1
 fi
 
@@ -53,7 +37,10 @@ if [ -n "$SUBSCRIPTIONS_FILE" ] && [ ! -f "$SUBSCRIPTIONS_FILE" ]; then
   exit 1
 fi
 
-# --- Funções auxiliares ---
+if [ -n "$CORPORATE_ACTIONS_FILE" ] && [ ! -f "$CORPORATE_ACTIONS_FILE" ]; then
+  echo "Erro: arquivo de ações corporativas não encontrado: $CORPORATE_ACTIONS_FILE"
+  exit 1
+fi
 
 wait_for_service() {
   local url=$1
@@ -68,8 +55,6 @@ wait_for_service() {
   done
   return 1
 }
-
-# --- 1. Containers Docker ---
 
 echo "=== Iniciando containers Docker ==="
 docker compose up -d 2>&1 | grep -v "^$"
@@ -91,8 +76,6 @@ while [ $attempt -lt 15 ]; do
 done
 echo "RabbitMQ pronto."
 
-# --- 2. Limpeza ---
-
 echo ""
 echo "=== Limpando dados ==="
 
@@ -106,13 +89,10 @@ docker exec "$MONGO_CONTAINER" mongosh --quiet --eval "
   print('Collections removidas.');
 "
 
-# Limpar filas (ignorar erros se não existirem)
 for queue in tradingnote.created.queue portfolioevent.processed.queue portfolioevent.impact.queue assetposition.calculated.dlq portfolioevent.created.queue; do
   docker exec "$RABBIT_CONTAINER" rabbitmqctl purge_queue "$queue" 2>/dev/null || true
 done
 echo "Filas limpas."
-
-# --- 3. Aguardar aplicação ---
 
 echo ""
 echo "=== Verificando aplicação ==="
@@ -123,8 +103,6 @@ else
   echo "Inicie a aplicação e tente novamente."
   exit 1
 fi
-
-# --- 4. Upload de notas ---
 
 echo ""
 echo "=== Enviando notas de negociação ==="
@@ -151,8 +129,6 @@ done
 
 echo "Notas: $SUCCESS ok, $SKIPPED ignorados (PDF inválido), $FAIL erros"
 
-# --- 5. Subscrições ---
-
 if [ -n "$SUBSCRIPTIONS_FILE" ]; then
   echo ""
   echo "=== Enviando subscrições ==="
@@ -160,12 +136,8 @@ if [ -n "$SUBSCRIPTIONS_FILE" ]; then
   SUB_COUNT=$(python3 -c "import json; print(len(json.load(open('$SUBSCRIPTIONS_FILE'))))" 2>/dev/null || echo "0")
   echo "Encontradas $SUB_COUNT subscrições em $SUBSCRIPTIONS_FILE"
 
-  SUB_OK=0
-  SUB_FAIL=0
-
-  # Iterar sobre cada objeto do array JSON
   python3 -c "
-import json, sys
+import json
 with open('$SUBSCRIPTIONS_FILE') as f:
     subs = json.load(f)
 for s in subs:
@@ -174,10 +146,7 @@ for s in subs:
     STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API_BASE/api/subscriptions" \
       -H "Content-Type: application/json" \
       -d "$sub_json" 2>/dev/null)
-    if [ "$STATUS" = "200" ]; then
-      SUB_OK=$((SUB_OK + 1))
-    else
-      SUB_FAIL=$((SUB_FAIL + 1))
+    if [ "$STATUS" != "200" ]; then
       TICKER=$(echo "$sub_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('subscriptionTicker','?'))" 2>/dev/null)
       echo "  FAIL ($STATUS): $TICKER"
     fi
@@ -186,13 +155,46 @@ for s in subs:
   echo "Subscrições processadas."
 fi
 
-# --- 6. Aguardar processamento assíncrono ---
+if [ -n "$CORPORATE_ACTIONS_FILE" ]; then
+  echo ""
+  echo "=== Enviando ações corporativas (split/reverse split) ==="
+
+  CA_COUNT=$(python3 -c "import json; print(len(json.load(open('$CORPORATE_ACTIONS_FILE'))))" 2>/dev/null || echo "0")
+  echo "Encontradas $CA_COUNT ações corporativas em $CORPORATE_ACTIONS_FILE"
+
+  python3 -c "
+import json
+with open('$CORPORATE_ACTIONS_FILE') as f:
+    actions = json.load(f)
+for a in actions:
+    print(json.dumps(a))
+" | while IFS= read -r action_json; do
+    ACTION_TYPE=$(echo "$action_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('type','').lower())")
+    if [ "$ACTION_TYPE" = "split" ]; then
+      ENDPOINT="split"
+    elif [ "$ACTION_TYPE" = "reverse_split" ]; then
+      ENDPOINT="reverse-split"
+    else
+      echo "  SKIP tipo desconhecido: $ACTION_TYPE"
+      continue
+    fi
+
+    STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API_BASE/api/portfolio-events/$ENDPOINT" \
+      -H "Content-Type: application/json" \
+      -d "$action_json" 2>/dev/null)
+
+    if [ "$STATUS" != "200" ]; then
+      TICKER=$(echo "$action_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('ticker','?'))")
+      echo "  FAIL ($STATUS): $ACTION_TYPE/$TICKER"
+    fi
+  done
+
+  echo "Ações corporativas processadas."
+fi
 
 echo ""
 echo "=== Aguardando processamento assíncrono ==="
 sleep 10
-
-# --- 7. Resultado ---
 
 echo ""
 echo "=== Resultado ==="
@@ -210,15 +212,8 @@ docker exec "$MONGO_CONTAINER" mongosh --quiet --eval "
     {\$group: {_id: '\$eventType', count: {\$sum: 1}}},
     {\$sort: {_id: 1}}
   ]).forEach(doc => print('  ' + doc._id + ': ' + doc.count));
-  print('');
-  print('--- Posições por tipo de ativo ---');
-  db.asset_positions.aggregate([
-    {\$group: {_id: '\$assetType', count: {\$sum: 1}}},
-    {\$sort: {_id: 1}}
-  ]).forEach(doc => print('  ' + (doc._id || 'sem tipo') + ': ' + doc.count));
 "
 
-# Verificar DLQ
 echo ""
 DLQ_MSGS=$(docker exec "$RABBIT_CONTAINER" rabbitmqctl list_queues name messages 2>/dev/null | grep "assetposition.calculated.dlq" | awk '{print $2}')
 if [ "${DLQ_MSGS:-0}" = "0" ]; then

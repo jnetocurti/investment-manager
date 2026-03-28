@@ -1,0 +1,26 @@
+[
+  {
+    "type": "split",
+    "ticker": "ITSA4",
+    "assetType": "STOCKS_BRL",
+    "brokerName": "XP",
+    "brokerDocument": "123",
+    "eventDate": "2024-02-10",
+    "ratio": {
+      "numerator": 2,
+      "denominator": 1
+    }
+  },
+  {
+    "type": "reverse_split",
+    "ticker": "ABCB4",
+    "assetType": "STOCKS_BRL",
+    "brokerName": "XP",
+    "brokerDocument": "123",
+    "eventDate": "2024-03-05",
+    "ratio": {
+      "numerator": 1,
+      "denominator": 10
+    }
+  }
+]

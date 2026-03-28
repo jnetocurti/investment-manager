@@ -4,6 +4,7 @@ import com.investmentmanager.assetposition.domain.port.out.AssetPositionHistoryR
 import com.investmentmanager.assetposition.domain.port.out.AssetPositionRepositoryPort;
 import com.investmentmanager.assetposition.domain.port.out.PositionImpactQueryPort;
 import com.investmentmanager.assetposition.domain.service.AssetPositionService;
+import com.investmentmanager.assetposition.domain.service.behavior.PositionBehaviorResolver;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -14,10 +15,12 @@ public class AssetPositionConfig {
     public AssetPositionService assetPositionService(
             PositionImpactQueryPort impactQueryPort,
             AssetPositionRepositoryPort positionRepository,
-            AssetPositionHistoryRepositoryPort historyRepository) {
+            AssetPositionHistoryRepositoryPort historyRepository,
+            PositionBehaviorResolver behaviorResolver) {
         return new AssetPositionService(
                 impactQueryPort,
                 positionRepository,
-                historyRepository);
+                historyRepository,
+                behaviorResolver);
     }
 }

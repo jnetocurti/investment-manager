@@ -5,5 +5,6 @@ package com.investmentmanager.portfolioevent.domain.model;
  */
 public enum EventSource {
     TRADING_NOTE,
-    SUBSCRIPTION
+    SUBSCRIPTION,
+    CORPORATE_ACTION
 }
