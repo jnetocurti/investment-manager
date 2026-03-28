@@ -24,8 +24,6 @@ class AssetPositionDocument {
     private String brokerKey;
     private String brokerName;
     private String brokerDocument;
-    private List<String> brokerNamesHistory;
-    private List<String> brokerDocumentsHistory;
     private int quantity;
     private BigDecimal averagePrice;
     private BigDecimal totalCost;

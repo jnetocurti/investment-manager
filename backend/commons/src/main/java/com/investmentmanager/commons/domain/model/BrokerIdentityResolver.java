@@ -9,6 +9,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class BrokerIdentityResolver {
@@ -31,10 +32,14 @@ public final class BrokerIdentityResolver {
         for (BrokerAliasGroup group : ALIAS_GROUPS) {
             if (group.matches(normalizedName, normalizedDocument)) {
                 LinkedHashSet<String> knownDocuments = new LinkedHashSet<>(group.getDocuments());
+                LinkedHashSet<String> knownNames = new LinkedHashSet<>(group.getNames());
                 if (brokerDocument != null && !brokerDocument.isBlank()) {
                     knownDocuments.add(brokerDocument);
                 }
-                return new BrokerIdentity(group.getCanonicalKey(), knownDocuments);
+                if (brokerName != null && !brokerName.isBlank()) {
+                    knownNames.add(brokerName);
+                }
+                return new BrokerIdentity(group.getCanonicalKey(), knownDocuments, knownNames);
             }
         }
 
@@ -47,7 +52,12 @@ public final class BrokerIdentityResolver {
             fallbackDocuments.add(brokerDocument);
         }
 
-        return new BrokerIdentity(fallbackKey, fallbackDocuments);
+        LinkedHashSet<String> fallbackNames = new LinkedHashSet<>();
+        if (brokerName != null && !brokerName.isBlank()) {
+            fallbackNames.add(brokerName);
+        }
+
+        return new BrokerIdentity(fallbackKey, fallbackDocuments, fallbackNames);
     }
 
     private static String normalizeName(String value) {
@@ -72,6 +82,7 @@ public final class BrokerIdentityResolver {
 
         private final String brokerKey;
         private final Set<String> knownDocuments;
+        private final Set<String> knownNames;
     }
 
     @Getter
@@ -87,8 +98,8 @@ public final class BrokerIdentityResolver {
             this.canonicalKey = canonicalKey;
             this.names = names;
             this.documents = documents;
-            this.normalizedNames = names.stream().map(BrokerIdentityResolver::normalizeName).collect(java.util.stream.Collectors.toSet());
-            this.normalizedDocuments = documents.stream().map(BrokerIdentityResolver::normalizeDocument).collect(java.util.stream.Collectors.toSet());
+            this.normalizedNames = names.stream().map(BrokerIdentityResolver::normalizeName).collect(Collectors.toSet());
+            this.normalizedDocuments = documents.stream().map(BrokerIdentityResolver::normalizeDocument).collect(Collectors.toSet());
         }
 
         private boolean matches(String normalizedName, String normalizedDocument) {
