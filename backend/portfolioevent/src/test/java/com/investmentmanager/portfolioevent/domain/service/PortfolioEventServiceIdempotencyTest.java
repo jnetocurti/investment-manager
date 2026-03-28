@@ -2,6 +2,8 @@ package com.investmentmanager.portfolioevent.domain.service;
 
 import com.investmentmanager.commons.domain.model.AssetType;
 import com.investmentmanager.commons.domain.model.MonetaryValue;
+import com.investmentmanager.commons.domain.model.adjustment.AbsoluteAdjustmentPayload;
+import com.investmentmanager.commons.domain.model.adjustment.AdjustmentType;
 import com.investmentmanager.portfolioevent.domain.model.EventSource;
 import com.investmentmanager.portfolioevent.domain.model.EventType;
 import com.investmentmanager.portfolioevent.domain.model.ImpactSourceType;
@@ -51,6 +53,11 @@ class PortfolioEventServiceIdempotencyTest {
                         .quantity(100)
                         .unitPrice(MonetaryValue.of("10"))
                         .fee(MonetaryValue.zero())
+                        .adjustmentType(AdjustmentType.ABSOLUTE)
+                        .adjustmentPayload(AbsoluteAdjustmentPayload.builder()
+                                .targetQuantity(100)
+                                .targetAveragePrice(MonetaryValue.of("10"))
+                                .build())
                         .eventDate(event.getEventDate())
                         .originType(event.getEventType())
                         .sourceType(ImpactSourceType.CORPORATE_ACTION)
