@@ -18,6 +18,7 @@ import java.util.regex.Pattern;
 class ClearNoteExtractor implements NoteExtractor {
 
     private static final String CLEAR_CNPJ_PREFIX = "02.332.886";
+    private static final String CLEAR_CNPJ_PREFIX_NEW = "15.107.963";
     private static final String CURRENCY = "BRL";
 
     // --- Identificação ---
@@ -36,7 +37,7 @@ class ClearNoteExtractor implements NoteExtractor {
     // A especificação pode ter múltiplas palavras. Usamos a quantidade (dígitos puros)
     // como âncora para separar especificação de observação.
     private static final Pattern OPERATION_PATTERN = Pattern.compile(
-            "1-BOVESPA\\s+(?<cv>[CV])\\s+(?:VISTA|FRACIONARIO)\\s+" +
+            "(?:1-BOVESPA|B3 RV LISTADO)\\s+(?<cv>[CV])\\s+(?:VISTA|FRACIONARIO)\\s+" +
             "(?<spec>.+?)\\s+" +
             "(?<qty>\\d+)\\s+(?<unitPrice>[\\d.,]+)\\s+(?<totalValue>[\\d.,]+)\\s+[DC]");
 
@@ -60,7 +61,8 @@ class ClearNoteExtractor implements NoteExtractor {
     @Override
     public boolean supports(String normalizedText) {
         Matcher m = CNPJ_PATTERN.matcher(normalizedText);
-        return m.find() && m.group("doc").startsWith(CLEAR_CNPJ_PREFIX);
+        return m.find() && (m.group("doc").startsWith(CLEAR_CNPJ_PREFIX) ||
+                m.group("doc").startsWith(CLEAR_CNPJ_PREFIX_NEW));
     }
 
     @Override

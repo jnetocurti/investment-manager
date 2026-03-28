@@ -142,6 +142,7 @@ for pdf in $(find "$NOTES_DIR" -name "*.pdf" | sort); do
     SUCCESS=$((SUCCESS + 1))
   elif [ "$STATUS" = "422" ]; then
     SKIPPED=$((SKIPPED + 1))
+    echo "SKIPPED - $pdf"
   else
     FAIL=$((FAIL + 1))
     echo "  FAIL ($STATUS): $(basename "$pdf")"
