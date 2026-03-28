@@ -7,7 +7,7 @@ import com.investmentmanager.portfolioevent.domain.model.EventType;
 import com.investmentmanager.portfolioevent.domain.model.ImpactSourceType;
 import com.investmentmanager.portfolioevent.domain.model.PortfolioEvent;
 import com.investmentmanager.portfolioevent.domain.model.PositionImpactEvent;
-import com.investmentmanager.portfolioevent.domain.model.PositionImpactType;
+import com.investmentmanager.commons.domain.model.PositionImpactType;
 import com.investmentmanager.portfolioevent.domain.port.out.PositionImpactEventPublisherPort;
 import com.investmentmanager.portfolioevent.domain.port.out.PositionImpactEventRepositoryPort;
 import com.investmentmanager.portfolioevent.domain.service.impact.PortfolioEventImpactTranslator;

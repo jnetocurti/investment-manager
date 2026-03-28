@@ -5,7 +5,7 @@ import com.investmentmanager.commons.domain.model.AssetType;
 import com.investmentmanager.portfolioevent.domain.model.EventType;
 import com.investmentmanager.portfolioevent.domain.model.ImpactSourceType;
 import com.investmentmanager.portfolioevent.domain.model.PositionImpactEvent;
-import com.investmentmanager.portfolioevent.domain.model.PositionImpactType;
+import com.investmentmanager.commons.domain.model.PositionImpactType;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 

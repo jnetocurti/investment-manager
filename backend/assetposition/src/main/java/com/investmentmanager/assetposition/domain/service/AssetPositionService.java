@@ -16,7 +16,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 @Slf4j
@@ -32,9 +31,6 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
         List<PositionImpactData> impacts = impactQueryPort
                 .findByTickerAndAssetTypeAndBrokerDocument(assetName, assetType, brokerDocument)
                 .stream()
-                .sorted(Comparator
-                        .comparing(PositionImpactData::getEventDate)
-                        .thenComparing(PositionImpactData::getSequence))
                 .toList();
 
         if (impacts.isEmpty()) {
@@ -57,30 +53,34 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
             }
             latestBrokerName = impact.getBrokerName();
 
-            if ("INCREASE".equals(impact.getImpactType())) {
-                MonetaryValue eventCost = impact.getUnitPrice().multiply(impact.getQuantity()).add(impact.getFee());
-                totalCost = totalCost.add(eventCost);
-                quantity += impact.getQuantity();
-                avgPrice = totalCost.divide(BigDecimal.valueOf(quantity));
-            } else if ("DECREASE".equals(impact.getImpactType())) {
-                quantity -= impact.getQuantity();
-                if (quantity <= 0) {
-                    quantity = 0;
-                    avgPrice = MonetaryValue.zero();
-                    totalCost = MonetaryValue.zero();
-                } else {
-                    totalCost = avgPrice.multiply(quantity);
+            switch (impact.getImpactType()) {
+                case INCREASE -> {
+                    MonetaryValue eventCost = impact.getUnitPrice().multiply(impact.getQuantity()).add(impact.getFee());
+                    totalCost = totalCost.add(eventCost);
+                    quantity += impact.getQuantity();
+                    avgPrice = totalCost.divide(BigDecimal.valueOf(quantity));
                 }
-            } else if ("ADJUST".equals(impact.getImpactType())) {
-                BigDecimal factor = impact.getFactor();
-                if (factor != null && factor.compareTo(BigDecimal.ZERO) > 0) {
-                    quantity = BigDecimal.valueOf(quantity).multiply(factor).intValue();
-                    avgPrice = avgPrice.divide(factor);
-                    totalCost = avgPrice.multiply(quantity).add(impact.getFee());
-                } else {
-                    quantity = impact.getQuantity();
-                    avgPrice = impact.getUnitPrice();
-                    totalCost = avgPrice.multiply(quantity).add(impact.getFee());
+                case DECREASE -> {
+                    quantity -= impact.getQuantity();
+                    if (quantity <= 0) {
+                        quantity = 0;
+                        avgPrice = MonetaryValue.zero();
+                        totalCost = MonetaryValue.zero();
+                    } else {
+                        totalCost = avgPrice.multiply(quantity);
+                    }
+                }
+                case ADJUST -> {
+                    BigDecimal factor = impact.getFactor();
+                    if (factor != null && factor.compareTo(BigDecimal.ZERO) > 0) {
+                        quantity = BigDecimal.valueOf(quantity).multiply(factor).intValue();
+                        avgPrice = avgPrice.divide(factor);
+                        totalCost = avgPrice.multiply(quantity).add(impact.getFee());
+                    } else {
+                        quantity = impact.getQuantity();
+                        avgPrice = impact.getUnitPrice();
+                        totalCost = avgPrice.multiply(quantity).add(impact.getFee());
+                    }
                 }
             }
 
@@ -90,7 +90,8 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
                     .totalCost(totalCost)
                     .eventDate(impact.getEventDate())
                     .sourceType(impact.getSourceType())
-                    .sourceReferenceId(impact.getOriginalEventId() + ":" + impact.getSequence())
+                    .sourceReferenceId(impact.getSourceReferenceId() != null ? impact.getSourceReferenceId()
+                            : impact.getOriginalEventId() + ":" + impact.getSequence())
                     .observation(observation)
                     .recordedAt(LocalDateTime.now())
                     .build();
@@ -136,7 +137,7 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
                         .quantity(quantity)
                         .averagePrice(avgPrice)
                         .totalCost(totalCost)
-                        .currency("BRL")
+                        .currency(assetType.getCurrency())
                         .updatedAt(LocalDateTime.now())
                         .history(last10)
                         .build());

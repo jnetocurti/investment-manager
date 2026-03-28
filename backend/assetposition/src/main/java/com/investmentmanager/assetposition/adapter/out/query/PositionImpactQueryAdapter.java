@@ -4,6 +4,7 @@ import com.investmentmanager.assetposition.domain.model.PositionImpactData;
 import com.investmentmanager.assetposition.domain.port.out.PositionImpactQueryPort;
 import com.investmentmanager.commons.domain.model.AssetType;
 import com.investmentmanager.commons.domain.model.MonetaryValue;
+import com.investmentmanager.commons.domain.model.PositionImpactType;
 import com.investmentmanager.portfolioevent.adapter.out.persistence.impact.PositionImpactEventDocument;
 import com.investmentmanager.portfolioevent.adapter.out.persistence.impact.PositionImpactEventMongoRepository;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +34,7 @@ class PositionImpactQueryAdapter implements PositionImpactQueryPort {
                         .originalEventId(doc.getOriginalEventId())
                         .ticker(doc.getTicker())
                         .assetType(doc.getAssetType() != null ? AssetType.valueOf(doc.getAssetType()) : null)
-                        .impactType(doc.getImpactType())
+                        .impactType(PositionImpactType.valueOf(doc.getImpactType()))
                         .sequence(doc.getSequence())
                         .quantity(doc.getQuantity())
                         .unitPrice(MonetaryValue.of(doc.getUnitPrice()))

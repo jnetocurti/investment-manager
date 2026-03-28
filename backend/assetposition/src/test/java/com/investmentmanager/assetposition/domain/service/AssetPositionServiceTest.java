@@ -6,6 +6,7 @@ import com.investmentmanager.assetposition.domain.port.out.AssetPositionReposito
 import com.investmentmanager.assetposition.domain.port.out.PositionImpactQueryPort;
 import com.investmentmanager.commons.domain.model.AssetType;
 import com.investmentmanager.commons.domain.model.MonetaryValue;
+import com.investmentmanager.commons.domain.model.PositionImpactType;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -21,7 +22,7 @@ import static org.mockito.Mockito.*;
 class AssetPositionServiceTest {
 
     @Test
-    void shouldSortDeterministicallyWithoutCreatedAtInfluence() {
+    void shouldCalculateWhenImpactsComeOrderedFromQuery() {
         PositionImpactQueryPort impactQueryPort = mock(PositionImpactQueryPort.class);
         AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
         AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
@@ -34,7 +35,7 @@ class AssetPositionServiceTest {
                         .sequence(2)
                         .ticker("PETR4")
                         .assetType(AssetType.STOCKS_BRL)
-                        .impactType("DECREASE")
+                        .impactType(PositionImpactType.DECREASE)
                         .quantity(40)
                         .unitPrice(MonetaryValue.of("11"))
                         .fee(MonetaryValue.of("1"))
@@ -49,7 +50,7 @@ class AssetPositionServiceTest {
                         .sequence(1)
                         .ticker("PETR4")
                         .assetType(AssetType.STOCKS_BRL)
-                        .impactType("INCREASE")
+                        .impactType(PositionImpactType.INCREASE)
                         .quantity(100)
                         .unitPrice(MonetaryValue.of("10"))
                         .fee(MonetaryValue.of("1"))
@@ -68,6 +69,7 @@ class AssetPositionServiceTest {
 
         assertThat(position).isNotNull();
         assertThat(position.getQuantity()).isEqualTo(60);
+        assertThat(position.getCurrency()).isEqualTo("BRL");
     }
 
     @Test
@@ -84,7 +86,7 @@ class AssetPositionServiceTest {
                         .sequence(1)
                         .ticker("ITSA4")
                         .assetType(AssetType.STOCKS_BRL)
-                        .impactType("INCREASE")
+                        .impactType(PositionImpactType.INCREASE)
                         .quantity(100)
                         .unitPrice(MonetaryValue.of("10"))
                         .fee(MonetaryValue.zero())
@@ -99,7 +101,7 @@ class AssetPositionServiceTest {
                         .sequence(1)
                         .ticker("ITSA4")
                         .assetType(AssetType.STOCKS_BRL)
-                        .impactType("ADJUST")
+                        .impactType(PositionImpactType.ADJUST)
                         .quantity(0)
                         .unitPrice(MonetaryValue.zero())
                         .fee(MonetaryValue.zero())
@@ -139,5 +141,89 @@ class AssetPositionServiceTest {
 
         assertThat(result).isNull();
         verifyNoInteractions(positionRepository);
+    }
+
+    @Test
+    void shouldHandleComplexRealisticSequenceWithTotalSellAndReentry() {
+        PositionImpactQueryPort impactQueryPort = mock(PositionImpactQueryPort.class);
+        AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
+        AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
+        AssetPositionService service = new AssetPositionService(impactQueryPort, positionRepository, historyRepository);
+
+        List<PositionImpactData> impacts = List.of(
+                impact("e1", PositionImpactType.INCREASE, 100, "10", "0", null, LocalDate.of(2024, 1, 2), 1),
+                impact("e2", PositionImpactType.INCREASE, 50, "12", "1", null, LocalDate.of(2024, 1, 10), 2),
+                impact("e3", PositionImpactType.DECREASE, 80, "0", "0", null, LocalDate.of(2024, 1, 15), 3),
+                impact("e4", PositionImpactType.INCREASE, 20, "11", "0", null, LocalDate.of(2024, 1, 20), 4),
+                impact("e5", PositionImpactType.DECREASE, 90, "0", "0", null, LocalDate.of(2024, 1, 25), 5),
+                impact("e6", PositionImpactType.INCREASE, 40, "8", "0", null, LocalDate.of(2024, 1, 30), 6)
+        );
+
+        when(impactQueryPort.findByTickerAndAssetTypeAndBrokerDocument("VALE3", AssetType.STOCKS_BRL, "123"))
+                .thenReturn(impacts);
+        when(positionRepository.findByAssetNameAndAssetTypeAndBrokerDocument("VALE3", AssetType.STOCKS_BRL, "123"))
+                .thenReturn(Optional.empty());
+        when(positionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var position = service.calculatePosition("VALE3", AssetType.STOCKS_BRL, "123");
+
+        assertThat(position.getQuantity()).isEqualTo(40);
+        assertThat(position.getAveragePrice()).isEqualTo(MonetaryValue.of("8"));
+        assertThat(position.getTotalCost()).isEqualTo(MonetaryValue.of("320"));
+    }
+
+    @Test
+    void shouldApplyReverseSplitThenPartialSell() {
+        PositionImpactQueryPort impactQueryPort = mock(PositionImpactQueryPort.class);
+        AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
+        AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
+        AssetPositionService service = new AssetPositionService(impactQueryPort, positionRepository, historyRepository);
+
+        List<PositionImpactData> impacts = List.of(
+                impact("a1", PositionImpactType.INCREASE, 1000, "1.00", "0", null, LocalDate.of(2024, 3, 1), 1),
+                impact("a2", PositionImpactType.INCREASE, 200, "1.10", "0", null, LocalDate.of(2024, 3, 2), 2),
+                impact("a3", PositionImpactType.ADJUST, 0, "0", "0", new BigDecimal("0.1"), LocalDate.of(2024, 3, 5), 3),
+                impact("a4", PositionImpactType.INCREASE, 30, "14", "0", null, LocalDate.of(2024, 3, 10), 4),
+                impact("a5", PositionImpactType.DECREASE, 50, "0", "0", null, LocalDate.of(2024, 3, 11), 5)
+        );
+
+        when(impactQueryPort.findByTickerAndAssetTypeAndBrokerDocument("ABCB4", AssetType.STOCKS_BRL, "123"))
+                .thenReturn(impacts);
+        when(positionRepository.findByAssetNameAndAssetTypeAndBrokerDocument("ABCB4", AssetType.STOCKS_BRL, "123"))
+                .thenReturn(Optional.empty());
+        when(positionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var position = service.calculatePosition("ABCB4", AssetType.STOCKS_BRL, "123");
+
+        assertThat(position.getQuantity()).isEqualTo(100);
+        assertThat(position.getAveragePrice()).isEqualTo(MonetaryValue.of("10.933336"));
+        assertThat(position.getTotalCost()).isEqualTo(MonetaryValue.of("1093.3336"));
+    }
+
+    private PositionImpactData impact(String id,
+                                      PositionImpactType type,
+                                      int quantity,
+                                      String unitPrice,
+                                      String fee,
+                                      BigDecimal factor,
+                                      LocalDate eventDate,
+                                      int sequence) {
+        return PositionImpactData.builder()
+                .originalEventId(id)
+                .sequence(sequence)
+                .ticker("X")
+                .assetType(AssetType.STOCKS_BRL)
+                .impactType(type)
+                .quantity(quantity)
+                .unitPrice(MonetaryValue.of(unitPrice))
+                .fee(MonetaryValue.of(fee))
+                .factor(factor)
+                .eventDate(eventDate)
+                .createdAt(LocalDateTime.of(2024, 1, 1, 10, 0))
+                .sourceType("TRADING_NOTE")
+                .brokerName("XP")
+                .brokerDocument("123")
+                .sourceReferenceId(id + ":" + sequence)
+                .build();
     }
 }

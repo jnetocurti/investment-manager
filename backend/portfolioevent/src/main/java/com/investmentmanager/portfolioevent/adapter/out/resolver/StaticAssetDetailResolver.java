@@ -30,6 +30,7 @@ class StaticAssetDetailResolver implements AssetDetailResolverPort {
             entry("PETR4 PN EDR N2",         "PETR4",  STOCKS_BRL),
             entry("PETR4 PN ATZ N2",         "PETR4",  STOCKS_BRL),
             entry("MGLU3 ON NM",             "MGLU3",  STOCKS_BRL),
+            entry("MGLU3 ON EG NM",             "MGLU3",  STOCKS_BRL),
 
             // Fundos Imobiliários
             entry("HSML11 CI",   "HSML11", REAL_ESTATE_FUND_BRL),
@@ -47,9 +48,13 @@ class StaticAssetDetailResolver implements AssetDetailResolverPort {
             entry("JSRE11 CI",   "JSRE11", REAL_ESTATE_FUND_BRL),
             entry("HGRE11 CI",   "HGRE11", REAL_ESTATE_FUND_BRL),
             entry("KNRI11 CI",   "KNRI11", REAL_ESTATE_FUND_BRL),
+            entry("KNRI12 DM 162,74",   "KNRI12", REAL_ESTATE_FUND_BRL),
             entry("CPTS11 CI",   "CPTS11", REAL_ESTATE_FUND_BRL),
             entry("CPTS11 CI ERS", "CPTS11", REAL_ESTATE_FUND_BRL),
+            entry("CPTS11 CI EB", "CPTS11", REAL_ESTATE_FUND_BRL),
             entry("MXRF11 CI",   "MXRF11", REAL_ESTATE_FUND_BRL),
+            entry("MXRF12 DM 10,29",   "MXRF12", REAL_ESTATE_FUND_BRL),
+            entry("MXRF12 DM 10,36",   "MXRF12", REAL_ESTATE_FUND_BRL),
             entry("HGBS11 CI",   "HGBS11", REAL_ESTATE_FUND_BRL),
             entry("XPML11 CI",   "XPML11", REAL_ESTATE_FUND_BRL),
             entry("BRCO11 CI",   "BRCO11", REAL_ESTATE_FUND_BRL),
@@ -66,8 +71,9 @@ class StaticAssetDetailResolver implements AssetDetailResolverPort {
             // BDRs
             entry("AMZO34 DRN",  "AMZO34", BRAZILIAN_DEPOSITARY_RECEIPT_BRL),
             entry("NFLX34 DRN",  "NFLX34", BRAZILIAN_DEPOSITARY_RECEIPT_BRL),
-            entry("ROXO34 DRN",  "ROXO34", BRAZILIAN_DEPOSITARY_RECEIPT_BRL)
-    );
+            entry("ROXO34 DRN",  "ROXO34", BRAZILIAN_DEPOSITARY_RECEIPT_BRL),
+            entry("XP INC DR1",  "XPBR31", BRAZILIAN_DEPOSITARY_RECEIPT_BRL)
+            );
 
     @Override
     public AssetDetail resolve(String assetDescription) {
