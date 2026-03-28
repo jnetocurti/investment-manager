@@ -4,5 +4,5 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 
 interface AssetPositionHistoryMongoRepository extends MongoRepository<AssetPositionHistoryDocument, String> {
 
-    void deleteByAssetNameAndBrokerDocument(String assetName, String brokerDocument);
+    void deleteByAssetNameAndBrokerKey(String assetName, String brokerKey);
 }

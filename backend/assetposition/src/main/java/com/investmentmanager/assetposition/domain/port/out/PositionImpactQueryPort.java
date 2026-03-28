@@ -8,8 +8,9 @@ import java.util.List;
 
 public interface PositionImpactQueryPort {
 
-    List<PositionImpactData> findByTickerAndAssetTypeAndBrokerDocument(
+    List<PositionImpactData> findByTickerAndAssetTypeAndBrokerAliases(
             String ticker,
             AssetType assetType,
-            String brokerDocument);
+            List<String> brokerDocuments,
+            List<String> brokerNames);
 }

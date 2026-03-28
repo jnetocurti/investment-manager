@@ -21,7 +21,11 @@ public class PortfolioEventProcessedListener {
                 message.getTicker(), message.getImpactType(), message.getBrokerName(), message.getBrokerDocument());
 
         try {
-            useCase.calculatePosition(message.getTicker(), message.getAssetType(), message.getBrokerDocument());
+            useCase.calculatePosition(
+                    message.getTicker(),
+                    message.getAssetType(),
+                    message.getBrokerName(),
+                    message.getBrokerDocument());
         } catch (Exception e) {
             log.error("Erro ao calcular posição: asset={}, brokerDoc={}",
                     message.getTicker(), message.getBrokerDocument(), e);

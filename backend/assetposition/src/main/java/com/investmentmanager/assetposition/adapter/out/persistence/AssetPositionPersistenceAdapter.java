@@ -22,14 +22,14 @@ class AssetPositionPersistenceAdapter implements AssetPositionRepositoryPort {
     }
 
     @Override
-    public Optional<AssetPosition> findByAssetNameAndAssetTypeAndBrokerDocument(
+    public Optional<AssetPosition> findByAssetNameAndAssetTypeAndBrokerKey(
             String assetName,
             AssetType assetType,
-            String brokerDocument) {
-        return mongoRepository.findByAssetNameAndAssetTypeAndBrokerDocument(
+            String brokerKey) {
+        return mongoRepository.findByAssetNameAndAssetTypeAndBrokerKey(
                         assetName,
                         assetType != null ? assetType.name() : null,
-                        brokerDocument)
+                        brokerKey)
                 .map(AssetPositionDocumentMapper::toDomain);
     }
 }
