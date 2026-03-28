@@ -8,7 +8,6 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
 import java.util.Collections;
-import java.util.List;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 class AssetPositionDocumentMapper {
@@ -18,8 +17,11 @@ class AssetPositionDocumentMapper {
         doc.setId(position.getId());
         doc.setAssetName(position.getAssetName());
         doc.setAssetType(position.getAssetType() != null ? position.getAssetType().name() : null);
+        doc.setBrokerKey(position.getBrokerKey());
         doc.setBrokerName(position.getBrokerName());
         doc.setBrokerDocument(position.getBrokerDocument());
+        doc.setBrokerNamesHistory(position.getBrokerNamesHistory());
+        doc.setBrokerDocumentsHistory(position.getBrokerDocumentsHistory());
         doc.setQuantity(position.getQuantity());
         doc.setAveragePrice(position.getAveragePrice().toDisplayValue());
         doc.setTotalCost(position.getTotalCost().toDisplayValue());
@@ -36,8 +38,11 @@ class AssetPositionDocumentMapper {
                 .id(doc.getId())
                 .assetName(doc.getAssetName())
                 .assetType(doc.getAssetType() != null ? AssetType.valueOf(doc.getAssetType()) : null)
+                .brokerKey(doc.getBrokerKey())
                 .brokerName(doc.getBrokerName())
                 .brokerDocument(doc.getBrokerDocument())
+                .brokerNamesHistory(doc.getBrokerNamesHistory() != null ? doc.getBrokerNamesHistory() : Collections.emptyList())
+                .brokerDocumentsHistory(doc.getBrokerDocumentsHistory() != null ? doc.getBrokerDocumentsHistory() : Collections.emptyList())
                 .quantity(doc.getQuantity())
                 .averagePrice(MonetaryValue.of(doc.getAveragePrice()))
                 .totalCost(MonetaryValue.of(doc.getTotalCost()))

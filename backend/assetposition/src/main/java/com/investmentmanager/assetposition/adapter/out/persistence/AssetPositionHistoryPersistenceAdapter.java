@@ -14,11 +14,11 @@ class AssetPositionHistoryPersistenceAdapter implements AssetPositionHistoryRepo
     private final AssetPositionHistoryMongoRepository mongoRepository;
 
     @Override
-    public void saveAll(List<AssetPositionSnapshot> snapshots, String assetName, String brokerDocument) {
+    public void saveAll(List<AssetPositionSnapshot> snapshots, String assetName, String brokerKey) {
         var docs = snapshots.stream().map(snapshot -> {
             var doc = new AssetPositionHistoryDocument();
             doc.setAssetName(assetName);
-            doc.setBrokerDocument(brokerDocument);
+            doc.setBrokerKey(brokerKey);
             doc.setQuantity(snapshot.getQuantity());
             doc.setAveragePrice(snapshot.getAveragePrice().toDisplayValue());
             doc.setTotalCost(snapshot.getTotalCost().toDisplayValue());
@@ -33,7 +33,7 @@ class AssetPositionHistoryPersistenceAdapter implements AssetPositionHistoryRepo
     }
 
     @Override
-    public void deleteByAssetNameAndBrokerDocument(String assetName, String brokerDocument) {
-        mongoRepository.deleteByAssetNameAndBrokerDocument(assetName, brokerDocument);
+    public void deleteByAssetNameAndBrokerKey(String assetName, String brokerKey) {
+        mongoRepository.deleteByAssetNameAndBrokerKey(assetName, brokerKey);
     }
 }

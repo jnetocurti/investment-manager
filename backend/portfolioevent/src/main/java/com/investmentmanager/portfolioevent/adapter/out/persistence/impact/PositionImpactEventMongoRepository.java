@@ -8,8 +8,8 @@ public interface PositionImpactEventMongoRepository extends MongoRepository<Posi
 
     boolean existsByOriginalEventIdAndImpactTypeAndSequence(String originalEventId, String impactType, int sequence);
 
-    List<PositionImpactEventDocument> findByTickerAndAssetTypeAndBrokerDocumentOrderByEventDateAscSequenceAsc(
+    List<PositionImpactEventDocument> findByTickerAndAssetTypeAndBrokerDocumentInOrderByEventDateAscSequenceAsc(
             String ticker,
             String assetType,
-            String brokerDocument);
+            List<String> brokerDocuments);
 }

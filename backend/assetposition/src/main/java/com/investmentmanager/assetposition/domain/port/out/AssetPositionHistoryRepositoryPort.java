@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface AssetPositionHistoryRepositoryPort {
 
-    void saveAll(List<AssetPositionSnapshot> snapshots, String assetName, String brokerDocument);
+    void saveAll(List<AssetPositionSnapshot> snapshots, String assetName, String brokerKey);
 
-    void deleteByAssetNameAndBrokerDocument(String assetName, String brokerDocument);
+    void deleteByAssetNameAndBrokerKey(String assetName, String brokerKey);
 }

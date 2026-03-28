@@ -10,8 +10,8 @@ import java.util.List;
 
 /**
  * Aggregate root — posição consolidada de um ativo por corretora.
- * Identificada pelo par {@code assetName} + {@code brokerDocument}.
- * O {@code brokerName} é informativo e atualizado quando muda.
+ * Identificada pelo par {@code assetName} + {@code brokerKey}.
+ * O {@code brokerName} e {@code brokerDocument} são dados da versão mais recente da corretora.
  */
 @Getter
 @Builder(toBuilder = true)
@@ -20,8 +20,11 @@ public class AssetPosition {
     private final String id;
     private final String assetName;
     private final AssetType assetType;
+    private final String brokerKey;
     private final String brokerName;
     private final String brokerDocument;
+    private final List<String> brokerNamesHistory;
+    private final List<String> brokerDocumentsHistory;
     private final int quantity;
     private final MonetaryValue averagePrice;
     private final MonetaryValue totalCost;

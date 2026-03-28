@@ -10,8 +10,8 @@ public interface AssetPositionRepositoryPort {
 
     AssetPosition save(AssetPosition position);
 
-    Optional<AssetPosition> findByAssetNameAndAssetTypeAndBrokerDocument(
+    Optional<AssetPosition> findByAssetNameAndAssetTypeAndBrokerKey(
             String assetName,
             AssetType assetType,
-            String brokerDocument);
+            String brokerKey);
 }

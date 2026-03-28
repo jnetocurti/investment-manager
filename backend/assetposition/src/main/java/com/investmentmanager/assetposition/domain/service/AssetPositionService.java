@@ -8,6 +8,7 @@ import com.investmentmanager.assetposition.domain.port.out.AssetPositionHistoryR
 import com.investmentmanager.assetposition.domain.port.out.AssetPositionRepositoryPort;
 import com.investmentmanager.assetposition.domain.port.out.PositionImpactQueryPort;
 import com.investmentmanager.commons.domain.model.AssetType;
+import com.investmentmanager.commons.domain.model.BrokerIdentityResolver;
 import com.investmentmanager.commons.domain.model.MonetaryValue;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +17,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 @Slf4j
@@ -27,14 +29,18 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
     private final AssetPositionHistoryRepositoryPort historyRepository;
 
     @Override
-    public AssetPosition calculatePosition(String assetName, AssetType assetType, String brokerDocument) {
+    public AssetPosition calculatePosition(String assetName, AssetType assetType, String brokerName, String brokerDocument) {
+        BrokerIdentityResolver.BrokerIdentity brokerIdentity = BrokerIdentityResolver.resolve(brokerName, brokerDocument);
+        List<String> brokerDocuments = new ArrayList<>(brokerIdentity.getKnownDocuments());
+
         List<PositionImpactData> impacts = impactQueryPort
-                .findByTickerAndAssetTypeAndBrokerDocument(assetName, assetType, brokerDocument)
+                .findByTickerAndAssetTypeAndBrokerDocuments(assetName, assetType, brokerDocuments)
                 .stream()
                 .toList();
 
         if (impacts.isEmpty()) {
-            log.info("Nenhum impacto encontrado para asset={}, brokerDoc={}", assetName, brokerDocument);
+            log.info("Nenhum impacto encontrado para asset={}, brokerKey={}, brokerDocs={}",
+                    assetName, brokerIdentity.getBrokerKey(), brokerDocuments);
             return null;
         }
 
@@ -42,8 +48,11 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
         MonetaryValue avgPrice = MonetaryValue.zero();
         MonetaryValue totalCost = MonetaryValue.zero();
         String latestBrokerName = impacts.getFirst().getBrokerName();
+        String latestBrokerDocument = impacts.getFirst().getBrokerDocument();
         String previousBrokerName = latestBrokerName;
         List<AssetPositionSnapshot> allSnapshots = new ArrayList<>();
+        LinkedHashSet<String> brokerNamesSeen = new LinkedHashSet<>();
+        LinkedHashSet<String> brokerDocumentsSeen = new LinkedHashSet<>();
 
         for (PositionImpactData impact : impacts) {
             String observation = null;
@@ -52,6 +61,9 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
                 previousBrokerName = impact.getBrokerName();
             }
             latestBrokerName = impact.getBrokerName();
+            latestBrokerDocument = impact.getBrokerDocument();
+            brokerNamesSeen.add(impact.getBrokerName());
+            brokerDocumentsSeen.add(impact.getBrokerDocument());
 
             switch (impact.getImpactType()) {
                 case INCREASE -> {
@@ -99,30 +111,37 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
         }
 
         AssetType resolvedAssetType = assetType != null ? assetType : impacts.getLast().getAssetType();
-        return persistPosition(assetName, brokerDocument, quantity, avgPrice, totalCost,
-                latestBrokerName, resolvedAssetType, allSnapshots);
+        return persistPosition(assetName, brokerIdentity.getBrokerKey(), quantity, avgPrice, totalCost,
+                latestBrokerName, latestBrokerDocument, resolvedAssetType, allSnapshots,
+                new ArrayList<>(brokerNamesSeen), new ArrayList<>(brokerDocumentsSeen));
     }
 
     private AssetPosition persistPosition(String assetName,
-                                          String brokerDocument,
+                                          String brokerKey,
                                           int quantity,
                                           MonetaryValue avgPrice,
                                           MonetaryValue totalCost,
                                           String latestBrokerName,
+                                          String latestBrokerDocument,
                                           AssetType assetType,
-                                          List<AssetPositionSnapshot> allSnapshots) {
-        historyRepository.deleteByAssetNameAndBrokerDocument(assetName, brokerDocument);
-        historyRepository.saveAll(allSnapshots, assetName, brokerDocument);
+                                          List<AssetPositionSnapshot> allSnapshots,
+                                          List<String> brokerNamesHistory,
+                                          List<String> brokerDocumentsHistory) {
+        historyRepository.deleteByAssetNameAndBrokerKey(assetName, brokerKey);
+        historyRepository.saveAll(allSnapshots, assetName, brokerKey);
 
         List<AssetPositionSnapshot> last10 = new ArrayList<>(allSnapshots.subList(
                 Math.max(0, allSnapshots.size() - 10), allSnapshots.size()));
         Collections.reverse(last10);
 
-        AssetPosition position = positionRepository.findByAssetNameAndAssetTypeAndBrokerDocument(
-                        assetName, assetType, brokerDocument)
+        AssetPosition position = positionRepository.findByAssetNameAndAssetTypeAndBrokerKey(
+                        assetName, assetType, brokerKey)
                 .map(existing -> existing.toBuilder()
                         .assetType(assetType)
                         .brokerName(latestBrokerName)
+                        .brokerDocument(latestBrokerDocument)
+                        .brokerNamesHistory(brokerNamesHistory)
+                        .brokerDocumentsHistory(brokerDocumentsHistory)
                         .quantity(quantity)
                         .averagePrice(avgPrice)
                         .totalCost(totalCost)
@@ -132,8 +151,11 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
                 .orElse(AssetPosition.builder()
                         .assetName(assetName)
                         .assetType(assetType)
+                        .brokerKey(brokerKey)
                         .brokerName(latestBrokerName)
-                        .brokerDocument(brokerDocument)
+                        .brokerDocument(latestBrokerDocument)
+                        .brokerNamesHistory(brokerNamesHistory)
+                        .brokerDocumentsHistory(brokerDocumentsHistory)
                         .quantity(quantity)
                         .averagePrice(avgPrice)
                         .totalCost(totalCost)
@@ -143,8 +165,8 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
                         .build());
 
         AssetPosition saved = positionRepository.save(position);
-        log.info("Posição calculada: asset={}, broker={} ({}), qty={}, avgPrice={}",
-                assetName, latestBrokerName, brokerDocument, quantity, avgPrice);
+        log.info("Posição calculada: asset={}, brokerKey={}, brokerAtual={} ({}), qty={}, avgPrice={}",
+                assetName, brokerKey, latestBrokerName, latestBrokerDocument, quantity, avgPrice);
         return saved;
     }
 }

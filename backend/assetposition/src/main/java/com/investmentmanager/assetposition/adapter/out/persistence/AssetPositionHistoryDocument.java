@@ -13,14 +13,14 @@ import java.time.LocalDateTime;
 @Data
 @Document(collection = "asset_position_history")
 @CompoundIndexes({
-    @CompoundIndex(name = "idx_hist_asset_broker", def = "{'assetName': 1, 'brokerDocument': 1}")
+    @CompoundIndex(name = "idx_hist_asset_broker", def = "{'assetName': 1, 'brokerKey': 1}")
 })
 class AssetPositionHistoryDocument {
 
     @Id
     private String id;
     private String assetName;
-    private String brokerDocument;
+    private String brokerKey;
     private int quantity;
     private BigDecimal averagePrice;
     private BigDecimal totalCost;

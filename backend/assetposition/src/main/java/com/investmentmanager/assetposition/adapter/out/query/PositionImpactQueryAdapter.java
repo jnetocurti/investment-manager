@@ -19,13 +19,13 @@ class PositionImpactQueryAdapter implements PositionImpactQueryPort {
     private final PositionImpactEventMongoRepository repository;
 
     @Override
-    public List<PositionImpactData> findByTickerAndAssetTypeAndBrokerDocument(
+    public List<PositionImpactData> findByTickerAndAssetTypeAndBrokerDocuments(
             String ticker,
             AssetType assetType,
-            String brokerDocument) {
+            List<String> brokerDocuments) {
         List<PositionImpactEventDocument> docs =
-                repository.findByTickerAndAssetTypeAndBrokerDocumentOrderByEventDateAscSequenceAsc(
-                        ticker, assetType != null ? assetType.name() : null, brokerDocument);
+                repository.findByTickerAndAssetTypeAndBrokerDocumentInOrderByEventDateAscSequenceAsc(
+                        ticker, assetType != null ? assetType.name() : null, brokerDocuments);
 
         return docs
                 .stream()
