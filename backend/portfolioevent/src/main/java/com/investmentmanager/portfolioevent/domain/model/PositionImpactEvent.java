@@ -2,6 +2,7 @@ package com.investmentmanager.portfolioevent.domain.model;
 
 import com.investmentmanager.commons.domain.model.AssetType;
 import com.investmentmanager.commons.domain.model.MonetaryValue;
+import com.investmentmanager.commons.domain.model.PositionAdjustmentType;
 import com.investmentmanager.commons.domain.model.PositionImpactType;
 import lombok.Builder;
 import lombok.Getter;
@@ -28,6 +29,7 @@ public class PositionImpactEvent {
     private final MonetaryValue unitPrice;
     private final MonetaryValue fee;
     private final BigDecimal factor;
+    private final PositionAdjustmentType adjustmentType;
     private final LocalDate eventDate;
     private final EventType originType;
     private final ImpactSourceType sourceType;
