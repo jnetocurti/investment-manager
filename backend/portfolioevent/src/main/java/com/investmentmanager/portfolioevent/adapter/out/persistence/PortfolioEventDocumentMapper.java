@@ -5,6 +5,7 @@ import com.investmentmanager.commons.domain.model.MonetaryValue;
 import com.investmentmanager.portfolioevent.domain.model.EventSource;
 import com.investmentmanager.portfolioevent.domain.model.EventType;
 import com.investmentmanager.portfolioevent.domain.model.PortfolioEvent;
+import com.investmentmanager.portfolioevent.domain.model.PortfolioEventMetadata;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -26,7 +27,7 @@ class PortfolioEventDocumentMapper {
         doc.setBrokerName(event.getBrokerName());
         doc.setBrokerDocument(event.getBrokerDocument());
         doc.setSourceReferenceId(event.getSourceReferenceId());
-        doc.setSubscriptionTicker(event.getSubscriptionTicker());
+        doc.setMetadata(toDocumentMetadata(event.getMetadata()));
         doc.setCreatedAt(event.getCreatedAt());
         return doc;
     }
@@ -47,8 +48,28 @@ class PortfolioEventDocumentMapper {
                 .brokerName(doc.getBrokerName())
                 .brokerDocument(doc.getBrokerDocument())
                 .sourceReferenceId(doc.getSourceReferenceId())
-                .subscriptionTicker(doc.getSubscriptionTicker())
+                .metadata(toDomainMetadata(doc.getMetadata()))
                 .createdAt(doc.getCreatedAt())
+                .build();
+    }
+
+    private static PortfolioEventDocument.MetadataDocument toDocumentMetadata(PortfolioEventMetadata metadata) {
+        if (metadata == null) {
+            return null;
+        }
+
+        var documentMetadata = new PortfolioEventDocument.MetadataDocument();
+        documentMetadata.setSubscriptionTicker(metadata.getSubscriptionTicker());
+        return documentMetadata;
+    }
+
+    private static PortfolioEventMetadata toDomainMetadata(PortfolioEventDocument.MetadataDocument metadata) {
+        if (metadata == null) {
+            return null;
+        }
+
+        return PortfolioEventMetadata.builder()
+                .subscriptionTicker(metadata.getSubscriptionTicker())
                 .build();
     }
 }

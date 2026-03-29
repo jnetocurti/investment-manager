@@ -63,7 +63,7 @@ public class SubscriptionController {
         return new SubscriptionResponse(
                 event.getId(),
                 event.getEventType().name(),
-                event.getSubscriptionTicker(),
+                event.getMetadata() != null ? event.getMetadata().getSubscriptionTicker() : null,
                 event.getAssetName(),
                 event.getQuantity(),
                 event.getUnitPrice().toString(),
