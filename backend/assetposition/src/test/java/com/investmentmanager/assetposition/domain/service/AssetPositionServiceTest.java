@@ -8,6 +8,7 @@ import com.investmentmanager.assetposition.domain.port.out.BrokerRegistryReposit
 import com.investmentmanager.assetposition.domain.port.out.PositionImpactQueryPort;
 import com.investmentmanager.commons.domain.model.AssetType;
 import com.investmentmanager.commons.domain.model.MonetaryValue;
+import com.investmentmanager.commons.domain.model.PositionAdjustmentType;
 import com.investmentmanager.commons.domain.model.PositionImpactType;
 import org.junit.jupiter.api.Test;
 
@@ -156,6 +157,54 @@ class AssetPositionServiceTest {
         assertThat(second.getQuantity()).isEqualTo(200);
         assertThat(first.getAveragePrice().toString()).isEqualTo(second.getAveragePrice().toString());
         verify(historyRepository, times(2)).deleteByAssetNameAndBrokerKey("ITSA4", "123");
+    }
+
+    @Test
+    void shouldApplySplitAdjustmentWhenAdjustmentTypeIsSplit() {
+        PositionImpactQueryPort impactQueryPort = mock(PositionImpactQueryPort.class);
+        AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
+        AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
+        BrokerRegistryRepositoryPort brokerRegistryRepository = mock(BrokerRegistryRepositoryPort.class);
+
+        AssetPositionService service = new AssetPositionService(
+                impactQueryPort,
+                positionRepository,
+                historyRepository,
+                brokerRegistryRepository);
+
+        List<PositionImpactData> replaySet = List.of(
+                impact("e1", PositionImpactType.INCREASE, 100, "10", "0",
+                        LocalDate.of(2024, 1, 10), "XP", "123", 1),
+                PositionImpactData.builder()
+                        .originalEventId("split")
+                        .sequence(2)
+                        .ticker("PETR4")
+                        .assetType(AssetType.STOCKS_BRL)
+                        .impactType(PositionImpactType.ADJUST)
+                        .adjustmentType(PositionAdjustmentType.SPLIT)
+                        .quantity(0)
+                        .unitPrice(MonetaryValue.zero())
+                        .fee(MonetaryValue.zero())
+                        .factor(BigDecimal.valueOf(2))
+                        .eventDate(LocalDate.of(2024, 2, 10))
+                        .createdAt(LocalDateTime.of(2024, 2, 10, 10, 0))
+                        .sourceType("CORPORATE_ACTION")
+                        .brokerName("XP")
+                        .brokerDocument("123")
+                        .build()
+        );
+
+        when(brokerRegistryRepository.findByBrokerKey("123")).thenReturn(Optional.empty());
+        when(impactQueryPort.findByTickerAndAssetTypeAndBrokerAliases("PETR4", AssetType.STOCKS_BRL, List.of("123"), List.of("XP")))
+                .thenReturn(replaySet);
+        when(brokerRegistryRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(positionRepository.findByAssetNameAndAssetTypeAndBrokerKey("PETR4", AssetType.STOCKS_BRL, "123")).thenReturn(Optional.empty());
+        when(positionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var position = service.calculatePosition("PETR4", AssetType.STOCKS_BRL, "XP", "123");
+
+        assertThat(position.getQuantity()).isEqualTo(200);
+        assertThat(position.getAveragePrice().toString()).isEqualTo("5.00");
     }
 
     @Test

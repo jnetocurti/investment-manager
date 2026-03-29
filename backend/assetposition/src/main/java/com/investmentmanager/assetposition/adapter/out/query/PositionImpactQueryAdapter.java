@@ -4,6 +4,7 @@ import com.investmentmanager.assetposition.domain.model.PositionImpactData;
 import com.investmentmanager.assetposition.domain.port.out.PositionImpactQueryPort;
 import com.investmentmanager.commons.domain.model.AssetType;
 import com.investmentmanager.commons.domain.model.MonetaryValue;
+import com.investmentmanager.commons.domain.model.PositionAdjustmentType;
 import com.investmentmanager.commons.domain.model.PositionImpactType;
 import com.investmentmanager.portfolioevent.adapter.out.persistence.impact.PositionImpactEventDocument;
 import com.investmentmanager.portfolioevent.adapter.out.persistence.impact.PositionImpactEventMongoRepository;
@@ -44,6 +45,9 @@ class PositionImpactQueryAdapter implements PositionImpactQueryPort {
                         .unitPrice(MonetaryValue.of(doc.getUnitPrice()))
                         .fee(MonetaryValue.of(doc.getFee()))
                         .factor(doc.getFactor())
+                        .adjustmentType(doc.getAdjustmentType() != null
+                                ? PositionAdjustmentType.valueOf(doc.getAdjustmentType())
+                                : null)
                         .eventDate(doc.getEventDate())
                         .originType(doc.getOriginType())
                         .sourceType(doc.getSourceType())

@@ -60,6 +60,7 @@ class StaticAssetDetailResolver implements AssetDetailResolverPort {
             entry("BRCO11 CI",   "BRCO11", REAL_ESTATE_FUND_BRL),
             entry("PVBI11 CI",   "PVBI11", REAL_ESTATE_FUND_BRL),
             entry("KNCR11 CI",   "KNCR11", REAL_ESTATE_FUND_BRL),
+            entry("KNCR12 DM 103,54",   "KNCR12", REAL_ESTATE_FUND_BRL),
             entry("CNES11 CI",   "CNES11", REAL_ESTATE_FUND_BRL),
             entry("TEPP11 CI",   "TEPP11", REAL_ESTATE_FUND_BRL),
             entry("NDIV11 CI",   "NDIV11", EXCHANGE_TRADED_FUND_BRL),

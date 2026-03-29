@@ -30,6 +30,7 @@ public class PositionImpactEventDocument {
     private BigDecimal unitPrice;
     private BigDecimal fee;
     private BigDecimal factor;
+    private String adjustmentType;
     private LocalDate eventDate;
     private String originType;
     private String sourceType;

@@ -2,6 +2,7 @@ package com.investmentmanager.portfolioevent.adapter.out.persistence.impact;
 
 import com.investmentmanager.commons.domain.model.MonetaryValue;
 import com.investmentmanager.commons.domain.model.AssetType;
+import com.investmentmanager.commons.domain.model.PositionAdjustmentType;
 import com.investmentmanager.portfolioevent.domain.model.EventType;
 import com.investmentmanager.portfolioevent.domain.model.ImpactSourceType;
 import com.investmentmanager.portfolioevent.domain.model.PositionImpactEvent;
@@ -24,6 +25,7 @@ public class PositionImpactEventDocumentMapper {
         doc.setUnitPrice(event.getUnitPrice().toDisplayValue());
         doc.setFee(event.getFee().toDisplayValue());
         doc.setFactor(event.getFactor());
+        doc.setAdjustmentType(event.getAdjustmentType() != null ? event.getAdjustmentType().name() : null);
         doc.setEventDate(event.getEventDate());
         doc.setOriginType(event.getOriginType().name());
         doc.setSourceType(event.getSourceType().name());
@@ -52,6 +54,9 @@ public class PositionImpactEventDocumentMapper {
                 .unitPrice(MonetaryValue.of(doc.getUnitPrice()))
                 .fee(MonetaryValue.of(doc.getFee()))
                 .factor(doc.getFactor())
+                .adjustmentType(doc.getAdjustmentType() != null
+                        ? PositionAdjustmentType.valueOf(doc.getAdjustmentType())
+                        : null)
                 .eventDate(doc.getEventDate())
                 .originType(EventType.valueOf(doc.getOriginType()))
                 .sourceType(ImpactSourceType.valueOf(doc.getSourceType()))
