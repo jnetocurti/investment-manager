@@ -5,6 +5,9 @@ import com.investmentmanager.commons.domain.model.MonetaryValue;
 import com.investmentmanager.portfolioevent.domain.model.EventSource;
 import com.investmentmanager.portfolioevent.domain.model.EventType;
 import com.investmentmanager.portfolioevent.domain.model.PortfolioEvent;
+import com.investmentmanager.portfolioevent.domain.model.PortfolioEventMetadata;
+import com.investmentmanager.portfolioevent.domain.model.SubscriptionConversionPortfolioEventMetadata;
+import com.investmentmanager.portfolioevent.domain.model.SubscriptionPortfolioEventMetadata;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -26,7 +29,7 @@ class PortfolioEventDocumentMapper {
         doc.setBrokerName(event.getBrokerName());
         doc.setBrokerDocument(event.getBrokerDocument());
         doc.setSourceReferenceId(event.getSourceReferenceId());
-        doc.setSubscriptionTicker(event.getSubscriptionTicker());
+        doc.setMetadata(toDocumentMetadata(event.getMetadata()));
         doc.setCreatedAt(event.getCreatedAt());
         return doc;
     }
@@ -47,8 +50,28 @@ class PortfolioEventDocumentMapper {
                 .brokerName(doc.getBrokerName())
                 .brokerDocument(doc.getBrokerDocument())
                 .sourceReferenceId(doc.getSourceReferenceId())
-                .subscriptionTicker(doc.getSubscriptionTicker())
+                .metadata(toDomainMetadata(doc.getMetadata()))
                 .createdAt(doc.getCreatedAt())
                 .build();
+    }
+
+    private static PortfolioEventMetadataDocument toDocumentMetadata(PortfolioEventMetadata metadata) {
+        if (metadata instanceof SubscriptionPortfolioEventMetadata subscriptionMetadata) {
+            return new SubscriptionPortfolioEventMetadataDocument(subscriptionMetadata.subscriptionTicker());
+        }
+        if (metadata instanceof SubscriptionConversionPortfolioEventMetadata conversionMetadata) {
+            return new SubscriptionConversionPortfolioEventMetadataDocument(conversionMetadata.subscriptionTicker());
+        }
+        return null;
+    }
+
+    private static PortfolioEventMetadata toDomainMetadata(PortfolioEventMetadataDocument metadata) {
+        if (metadata instanceof SubscriptionPortfolioEventMetadataDocument subscriptionMetadata) {
+            return new SubscriptionPortfolioEventMetadata(subscriptionMetadata.subscriptionTicker());
+        }
+        if (metadata instanceof SubscriptionConversionPortfolioEventMetadataDocument conversionMetadata) {
+            return new SubscriptionConversionPortfolioEventMetadata(conversionMetadata.subscriptionTicker());
+        }
+        return null;
     }
 }
