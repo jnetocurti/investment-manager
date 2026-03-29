@@ -1,6 +1,7 @@
 package com.investmentmanager.portfolioevent.domain.service;
 
 import com.investmentmanager.commons.domain.model.MonetaryValue;
+import com.investmentmanager.portfolioevent.domain.exception.IdempotentOperationException;
 import com.investmentmanager.portfolioevent.domain.model.EventSource;
 import com.investmentmanager.portfolioevent.domain.model.EventType;
 import com.investmentmanager.portfolioevent.domain.model.PortfolioEvent;
@@ -25,6 +26,7 @@ public class SubscriptionService implements SubscriptionUseCase {
     @Override
     public PortfolioEvent create(CreateSubscriptionCommand command) {
         validate(command);
+        validateIdempotency(command);
 
         PortfolioEvent subscription = PortfolioEvent.builder()
                 .eventType(EventType.SUBSCRIPTION)
@@ -54,6 +56,20 @@ public class SubscriptionService implements SubscriptionUseCase {
         }
 
         return saved;
+    }
+
+    private void validateIdempotency(CreateSubscriptionCommand command) {
+        boolean alreadyExists = repository.existsSubscriptionByUniqueKey(
+                EventType.SUBSCRIPTION.name(),
+                command.getTargetTicker(),
+                command.getTargetAssetType().name(),
+                command.getBrokerDocument(),
+                command.getSubscriptionDate());
+
+        if (alreadyExists) {
+            throw new IdempotentOperationException(
+                    "Subscrição já registrada para o mesmo ativo/corretora/data");
+        }
     }
 
     @Override
@@ -108,6 +124,8 @@ public class SubscriptionService implements SubscriptionUseCase {
             throw new IllegalArgumentException("Ticker da subscrição é obrigatório");
         if (command.getTargetTicker() == null || command.getTargetTicker().isBlank())
             throw new IllegalArgumentException("Ticker do ativo final é obrigatório");
+        if (command.getTargetAssetType() == null)
+            throw new IllegalArgumentException("Tipo do ativo final é obrigatório");
         if (command.getQuantity() <= 0)
             throw new IllegalArgumentException("Quantidade deve ser > 0");
         if (command.getUnitPrice() == null)

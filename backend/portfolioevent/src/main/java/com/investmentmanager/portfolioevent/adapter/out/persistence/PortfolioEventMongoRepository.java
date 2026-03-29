@@ -2,11 +2,19 @@ package com.investmentmanager.portfolioevent.adapter.out.persistence;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface PortfolioEventMongoRepository extends MongoRepository<PortfolioEventDocument, String> {
 
     boolean existsBySourceReferenceId(String sourceReferenceId);
+
+    boolean existsByEventTypeAndAssetNameAndAssetTypeAndBrokerDocumentAndEventDate(
+            String eventType,
+            String assetName,
+            String assetType,
+            String brokerDocument,
+            LocalDate eventDate);
 
     List<PortfolioEventDocument> findByAssetNameAndBrokerNameOrderByEventDateAsc(
             String assetName, String brokerName);

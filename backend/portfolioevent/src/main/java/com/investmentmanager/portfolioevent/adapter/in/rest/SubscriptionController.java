@@ -43,6 +43,8 @@ public class SubscriptionController {
             return ResponseEntity.ok(toResponse(result));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(409).body(e.getMessage());
         }
     }
 
