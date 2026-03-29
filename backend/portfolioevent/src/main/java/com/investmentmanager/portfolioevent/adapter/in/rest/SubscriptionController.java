@@ -65,7 +65,7 @@ public class SubscriptionController {
         return new SubscriptionResponse(
                 event.getId(),
                 event.getEventType().name(),
-                event.getSubscriptionTicker(),
+                event.subscriptionTicker().orElse(null),
                 event.getAssetName(),
                 event.getQuantity(),
                 event.getUnitPrice().toString(),

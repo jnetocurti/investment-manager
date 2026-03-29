@@ -9,6 +9,7 @@ import lombok.Getter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 /**
  * Aggregate root — registro factual de um evento de portfólio.
@@ -36,7 +37,7 @@ public class PortfolioEvent {
     private final String brokerName;
     private final String brokerDocument;
     private final String sourceReferenceId;
-    private final String subscriptionTicker;
+    private final PortfolioEventMetadata metadata;
     private final LocalDateTime createdAt;
 
     /**
@@ -90,5 +91,15 @@ public class PortfolioEvent {
             throw new IllegalArgumentException("Event date is required");
         if (sourceReferenceId == null || sourceReferenceId.isBlank())
             throw new IllegalArgumentException("Source reference ID is required");
+    }
+
+    public Optional<String> subscriptionTicker() {
+        if (metadata instanceof SubscriptionPortfolioEventMetadata subscriptionMetadata) {
+            return Optional.of(subscriptionMetadata.subscriptionTicker());
+        }
+        if (metadata instanceof SubscriptionConversionPortfolioEventMetadata conversionMetadata) {
+            return Optional.of(conversionMetadata.subscriptionTicker());
+        }
+        return Optional.empty();
     }
 }

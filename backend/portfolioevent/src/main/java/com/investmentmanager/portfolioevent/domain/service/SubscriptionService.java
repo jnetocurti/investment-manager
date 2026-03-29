@@ -5,6 +5,8 @@ import com.investmentmanager.portfolioevent.domain.exception.IdempotentOperation
 import com.investmentmanager.portfolioevent.domain.model.EventSource;
 import com.investmentmanager.portfolioevent.domain.model.EventType;
 import com.investmentmanager.portfolioevent.domain.model.PortfolioEvent;
+import com.investmentmanager.portfolioevent.domain.model.SubscriptionConversionPortfolioEventMetadata;
+import com.investmentmanager.portfolioevent.domain.model.SubscriptionPortfolioEventMetadata;
 import com.investmentmanager.portfolioevent.domain.port.in.CreateSubscriptionCommand;
 import com.investmentmanager.portfolioevent.domain.port.in.SubscriptionUseCase;
 import com.investmentmanager.portfolioevent.domain.port.out.PortfolioEventRepositoryPort;
@@ -32,7 +34,7 @@ public class SubscriptionService implements SubscriptionUseCase {
                 .eventSource(EventSource.SUBSCRIPTION)
                 .assetName(command.getTargetTicker())
                 .assetType(command.getTargetAssetType())
-                .subscriptionTicker(command.getSubscriptionTicker())
+                .metadata(new SubscriptionPortfolioEventMetadata(command.getSubscriptionTicker()))
                 .quantity(command.getQuantity())
                 .unitPrice(MonetaryValue.of(command.getUnitPrice()))
                 .totalValue(MonetaryValue.of(command.getTotalValue()))
@@ -95,7 +97,8 @@ public class SubscriptionService implements SubscriptionUseCase {
                 .eventSource(EventSource.SUBSCRIPTION)
                 .assetName(subscription.getAssetName())
                 .assetType(subscription.getAssetType())
-                .subscriptionTicker(subscription.getSubscriptionTicker())
+                .metadata(new SubscriptionConversionPortfolioEventMetadata(subscription.subscriptionTicker()
+                        .orElseThrow(() -> new IllegalStateException("Subscrição sem metadata de ticker"))))
                 .quantity(subscription.getQuantity())
                 .unitPrice(subscription.getUnitPrice())
                 .totalValue(subscription.getTotalValue())
