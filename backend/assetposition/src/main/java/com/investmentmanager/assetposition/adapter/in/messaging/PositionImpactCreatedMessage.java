@@ -22,6 +22,7 @@ public class PositionImpactCreatedMessage {
     private String originType;
     private String sourceType;
     private BigDecimal factor;
+    private String adjustmentType;
     private String brokerName;
     private String brokerDocument;
     private String sourceReferenceId;

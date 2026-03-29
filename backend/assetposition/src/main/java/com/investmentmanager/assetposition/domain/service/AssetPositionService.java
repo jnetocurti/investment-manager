@@ -9,13 +9,15 @@ import com.investmentmanager.assetposition.domain.port.out.AssetPositionHistoryR
 import com.investmentmanager.assetposition.domain.port.out.AssetPositionRepositoryPort;
 import com.investmentmanager.assetposition.domain.port.out.BrokerRegistryRepositoryPort;
 import com.investmentmanager.assetposition.domain.port.out.PositionImpactQueryPort;
+import com.investmentmanager.assetposition.domain.service.impact.PositionApplyResult;
+import com.investmentmanager.assetposition.domain.service.impact.PositionImpactApplierRegistry;
+import com.investmentmanager.assetposition.domain.service.impact.PositionState;
 import com.investmentmanager.commons.domain.model.AssetType;
 import com.investmentmanager.commons.domain.model.BrokerIdentityResolver;
 import com.investmentmanager.commons.domain.model.MonetaryValue;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,6 +33,15 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
     private final AssetPositionRepositoryPort positionRepository;
     private final AssetPositionHistoryRepositoryPort historyRepository;
     private final BrokerRegistryRepositoryPort brokerRegistryRepository;
+    private final PositionImpactApplierRegistry impactApplierRegistry;
+
+    public AssetPositionService(PositionImpactQueryPort impactQueryPort,
+                                AssetPositionRepositoryPort positionRepository,
+                                AssetPositionHistoryRepositoryPort historyRepository,
+                                BrokerRegistryRepositoryPort brokerRegistryRepository) {
+        this(impactQueryPort, positionRepository, historyRepository, brokerRegistryRepository,
+                PositionImpactApplierRegistry.defaultRegistry());
+    }
 
     @Override
     public AssetPosition calculatePosition(String assetName, AssetType assetType, String brokerName, String brokerDocument) {
@@ -59,9 +70,11 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
             return null;
         }
 
-        int quantity = 0;
-        MonetaryValue avgPrice = MonetaryValue.zero();
-        MonetaryValue totalCost = MonetaryValue.zero();
+        PositionState state = PositionState.builder()
+                .quantity(0)
+                .averagePrice(MonetaryValue.zero())
+                .totalCost(MonetaryValue.zero())
+                .build();
         String latestBrokerName = impacts.getFirst().getBrokerName();
         String latestBrokerDocument = impacts.getFirst().getBrokerDocument();
         String previousBrokerName = latestBrokerName;
@@ -82,41 +95,13 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
             brokerNames.add(impact.getBrokerName());
             brokerDocuments.add(impact.getBrokerDocument());
 
-            switch (impact.getImpactType()) {
-                case INCREASE -> {
-                    MonetaryValue eventCost = impact.getUnitPrice().multiply(impact.getQuantity()).add(impact.getFee());
-                    totalCost = totalCost.add(eventCost);
-                    quantity += impact.getQuantity();
-                    avgPrice = totalCost.divide(BigDecimal.valueOf(quantity));
-                }
-                case DECREASE -> {
-                    quantity -= impact.getQuantity();
-                    if (quantity <= 0) {
-                        quantity = 0;
-                        avgPrice = MonetaryValue.zero();
-                        totalCost = MonetaryValue.zero();
-                    } else {
-                        totalCost = avgPrice.multiply(quantity);
-                    }
-                }
-                case ADJUST -> {
-                    BigDecimal factor = impact.getFactor();
-                    if (factor != null && factor.compareTo(BigDecimal.ZERO) > 0) {
-                        quantity = BigDecimal.valueOf(quantity).multiply(factor).intValue();
-                        avgPrice = avgPrice.divide(factor);
-                        totalCost = avgPrice.multiply(quantity).add(impact.getFee());
-                    } else {
-                        quantity = impact.getQuantity();
-                        avgPrice = impact.getUnitPrice();
-                        totalCost = avgPrice.multiply(quantity).add(impact.getFee());
-                    }
-                }
-            }
+            PositionApplyResult result = impactApplierRegistry.apply(state, impact);
+            state = result.getState();
 
             AssetPositionSnapshot snapshot = AssetPositionSnapshot.builder()
-                    .quantity(quantity)
-                    .averagePrice(avgPrice)
-                    .totalCost(totalCost)
+                    .quantity(state.getQuantity())
+                    .averagePrice(state.getAveragePrice())
+                    .totalCost(state.getTotalCost())
                     .eventDate(impact.getEventDate())
                     .sourceType(impact.getSourceType())
                     .sourceReferenceId(impact.getSourceReferenceId() != null ? impact.getSourceReferenceId()
@@ -136,7 +121,8 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
                 new ArrayList<>(brokerDocuments));
 
         AssetType resolvedAssetType = assetType != null ? assetType : impacts.getLast().getAssetType();
-        return persistPosition(assetName, savedRegistry, quantity, avgPrice, totalCost, resolvedAssetType, allSnapshots);
+        return persistPosition(assetName, savedRegistry, state.getQuantity(), state.getAveragePrice(), state.getTotalCost(),
+                resolvedAssetType, allSnapshots);
     }
 
     private String buildBrokerChangeObservation(String previousBrokerName,

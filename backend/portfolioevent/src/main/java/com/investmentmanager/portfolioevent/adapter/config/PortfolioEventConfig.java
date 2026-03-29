@@ -4,6 +4,7 @@ import com.investmentmanager.portfolioevent.domain.port.out.AssetDetailResolverP
 import com.investmentmanager.portfolioevent.domain.port.out.PortfolioEventRepositoryPort;
 import com.investmentmanager.portfolioevent.domain.port.out.PositionImpactEventPublisherPort;
 import com.investmentmanager.portfolioevent.domain.port.out.PositionImpactEventRepositoryPort;
+import com.investmentmanager.portfolioevent.domain.service.CorporateActionService;
 import com.investmentmanager.portfolioevent.domain.service.PortfolioEventService;
 import com.investmentmanager.portfolioevent.domain.service.PositionImpactGenerationService;
 import com.investmentmanager.portfolioevent.domain.service.SubscriptionService;
@@ -75,5 +76,12 @@ public class PortfolioEventConfig {
             PortfolioEventRepositoryPort repository,
             PositionImpactGenerationService impactGenerationService) {
         return new SubscriptionService(repository, impactGenerationService);
+    }
+
+    @Bean
+    public CorporateActionService corporateActionService(
+            PositionImpactEventRepositoryPort impactRepository,
+            PositionImpactEventPublisherPort impactPublisher) {
+        return new CorporateActionService(impactRepository, impactPublisher);
     }
 }

@@ -1,13 +1,14 @@
 #!/bin/bash
 #
-# Carga completa: notas de negociação + subscrições
+# Carga completa: notas de negociação + subscrições + eventos corporativos (split)
 #
 # Uso:
-#   ./scripts/load-data.sh <diretório-notas> [arquivo-subscricoes.json]
+#   ./scripts/load-data.sh <diretório-notas> [arquivo-subscricoes.json] [arquivo-splits.json]
 #
 # Exemplos:
 #   ./scripts/load-data.sh ~/notas_negociacao
 #   ./scripts/load-data.sh ~/notas_negociacao subscricoes.json
+#   ./scripts/load-data.sh ~/notas_negociacao subscricoes.json splits.json
 #
 # O arquivo de subscrições é um JSON array:
 # [
@@ -25,6 +26,21 @@
 #     "conversionDate": "2024-07-15"
 #   }
 # ]
+#
+# O arquivo de splits é um JSON array:
+# [
+#   {
+#     "ticker": "ITSA4",
+#     "assetType": "STOCKS_BRL",
+#     "factor": 2.0,
+#     "fee": 0,
+#     "eventDate": "2024-08-10",
+#     "brokerName": "NUINVEST",
+#     "brokerDocument": "62.169.875/0001-79",
+#     "sourceReferenceId": "corporate-split-itsa4-2024",
+#     "originalEventId": "split-itsa4-2024"
+#   }
+# ]
 
 set -euo pipefail
 
@@ -37,9 +53,10 @@ DB_NAME="investmentmanager"
 
 NOTES_DIR="${1:-}"
 SUBSCRIPTIONS_FILE="${2:-}"
+SPLITS_FILE="${3:-}"
 
 if [ -z "$NOTES_DIR" ]; then
-  echo "Uso: $0 <diretório-notas> [arquivo-subscricoes.json]"
+  echo "Uso: $0 <diretório-notas> [arquivo-subscricoes.json] [arquivo-splits.json]"
   exit 1
 fi
 
@@ -50,6 +67,11 @@ fi
 
 if [ -n "$SUBSCRIPTIONS_FILE" ] && [ ! -f "$SUBSCRIPTIONS_FILE" ]; then
   echo "Erro: arquivo de subscrições não encontrado: $SUBSCRIPTIONS_FILE"
+  exit 1
+fi
+
+if [ -n "$SPLITS_FILE" ] && [ ! -f "$SPLITS_FILE" ]; then
+  echo "Erro: arquivo de splits não encontrado: $SPLITS_FILE"
   exit 1
 fi
 
@@ -186,13 +208,41 @@ for s in subs:
   echo "Subscrições processadas."
 fi
 
-# --- 6. Aguardar processamento assíncrono ---
+# --- 6. Splits ---
+
+if [ -n "$SPLITS_FILE" ]; then
+  echo ""
+  echo "=== Enviando splits ==="
+
+  SPLIT_COUNT=$(python3 -c "import json; print(len(json.load(open('$SPLITS_FILE'))))" 2>/dev/null || echo "0")
+  echo "Encontrados $SPLIT_COUNT splits em $SPLITS_FILE"
+
+  python3 -c "
+import json
+with open('$SPLITS_FILE') as f:
+    splits = json.load(f)
+for s in splits:
+    print(json.dumps(s))
+" | while IFS= read -r split_json; do
+    STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API_BASE/api/corporate-actions/splits" \
+      -H "Content-Type: application/json" \
+      -d "$split_json" 2>/dev/null)
+    if [ "$STATUS" != "200" ]; then
+      TICKER=$(echo "$split_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('ticker','?'))" 2>/dev/null)
+      echo "  FAIL ($STATUS): split $TICKER"
+    fi
+  done
+
+  echo "Splits processados."
+fi
+
+# --- 7. Aguardar processamento assíncrono ---
 
 echo ""
 echo "=== Aguardando processamento assíncrono ==="
 sleep 10
 
-# --- 7. Resultado ---
+# --- 8. Resultado ---
 
 echo ""
 echo "=== Resultado ==="

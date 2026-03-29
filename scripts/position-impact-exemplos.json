@@ -59,6 +59,7 @@
     "unitPrice": 0,
     "fee": 0,
     "factor": 2.0,
+    "adjustmentType": "SPLIT",
     "eventDate": "2024-08-10",
     "originType": "BUY",
     "sourceType": "CORPORATE_ACTION",

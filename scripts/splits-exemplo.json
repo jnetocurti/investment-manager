@@ -1,0 +1,13 @@
+[
+  {
+    "ticker": "ITSA4",
+    "assetType": "STOCKS_BRL",
+    "factor": 2.0,
+    "fee": 0,
+    "eventDate": "2024-08-10",
+    "brokerName": "NUINVEST",
+    "brokerDocument": "62.169.875/0001-79",
+    "sourceReferenceId": "corporate-split-itsa4-2024",
+    "originalEventId": "split-itsa4-2024"
+  }
+]
