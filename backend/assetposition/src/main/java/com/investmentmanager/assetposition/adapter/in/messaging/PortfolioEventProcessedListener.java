@@ -17,19 +17,18 @@ public class PortfolioEventProcessedListener {
 
     @RabbitListener(queues = "portfolioevent.impact.queue")
     public void onPositionImpactCreated(PositionImpactCreatedMessage message) {
-        log.info("Recebido impacto de posição: ticker={}, impactType={}, broker={} ({})",
-                message.getTicker(), message.getImpactType(), message.getBrokerName(), message.getBrokerDocument());
+        log.info("Recebido impacto de posição: ticker={}, impactType={}, brokerId={}",
+                message.getTicker(), message.getImpactType(), message.getBrokerId());
 
         try {
             useCase.calculatePosition(
                     message.getTicker(),
                     message.getAssetType(),
-                    message.getBrokerName(),
-                    message.getBrokerDocument());
+                    message.getBrokerId());
         } catch (Exception e) {
-            log.error("Erro ao calcular posição: asset={}, brokerDoc={}",
-                    message.getTicker(), message.getBrokerDocument(), e);
-            dlqPublisher.publishFailure(message.getTicker(), message.getBrokerDocument(),
+            log.error("Erro ao calcular posição: asset={}, brokerId={}",
+                    message.getTicker(), message.getBrokerId(), e);
+            dlqPublisher.publishFailure(message.getTicker(), message.getBrokerId(),
                     "POSITION_IMPACT", message.getOriginalEventId(), e.getMessage());
         }
     }

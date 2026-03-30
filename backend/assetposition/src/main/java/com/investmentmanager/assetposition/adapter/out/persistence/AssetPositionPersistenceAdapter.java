@@ -12,24 +12,23 @@ import java.util.Optional;
 @RequiredArgsConstructor
 class AssetPositionPersistenceAdapter implements AssetPositionRepositoryPort {
 
-    private final AssetPositionMongoRepository mongoRepository;
+    private final AssetPositionMongoRepository repository;
 
     @Override
-    public AssetPosition save(AssetPosition position) {
-        var doc = AssetPositionDocumentMapper.toDocument(position);
-        var saved = mongoRepository.save(doc);
+    public AssetPosition save(AssetPosition assetPosition) {
+        var saved = repository.save(AssetPositionDocumentMapper.toDocument(assetPosition));
         return AssetPositionDocumentMapper.toDomain(saved);
     }
 
     @Override
-    public Optional<AssetPosition> findByAssetNameAndAssetTypeAndBrokerKey(
+    public Optional<AssetPosition> findByAssetNameAndAssetTypeAndBrokerId(
             String assetName,
             AssetType assetType,
-            String brokerKey) {
-        return mongoRepository.findByAssetNameAndAssetTypeAndBrokerKey(
+            String brokerId) {
+        return repository.findByAssetNameAndAssetTypeAndBrokerId(
                         assetName,
                         assetType != null ? assetType.name() : null,
-                        brokerKey)
+                        brokerId)
                 .map(AssetPositionDocumentMapper::toDomain);
     }
 }

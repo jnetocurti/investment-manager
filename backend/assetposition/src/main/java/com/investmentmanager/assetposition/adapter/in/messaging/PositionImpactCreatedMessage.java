@@ -1,9 +1,9 @@
 package com.investmentmanager.assetposition.adapter.in.messaging;
 
+import com.investmentmanager.commons.domain.model.AssetType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import com.investmentmanager.commons.domain.model.AssetType;
 
 import java.math.BigDecimal;
 
@@ -22,8 +22,7 @@ public class PositionImpactCreatedMessage {
     private String originType;
     private String sourceType;
     private BigDecimal factor;
-    private String brokerName;
-    private String brokerDocument;
+    private String brokerId;
     private String sourceReferenceId;
     private int schemaVersion;
 }

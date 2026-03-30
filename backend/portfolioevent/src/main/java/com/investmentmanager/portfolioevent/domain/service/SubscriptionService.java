@@ -1,6 +1,5 @@
 package com.investmentmanager.portfolioevent.domain.service;
 
-import com.investmentmanager.commons.domain.model.BrokerIdentityResolver;
 import com.investmentmanager.commons.domain.model.MonetaryValue;
 import com.investmentmanager.portfolioevent.domain.model.EventSource;
 import com.investmentmanager.portfolioevent.domain.model.EventType;
@@ -8,6 +7,7 @@ import com.investmentmanager.portfolioevent.domain.model.PortfolioEvent;
 import com.investmentmanager.portfolioevent.domain.model.PortfolioEventMetadata;
 import com.investmentmanager.portfolioevent.domain.port.in.CreateSubscriptionCommand;
 import com.investmentmanager.portfolioevent.domain.port.in.SubscriptionUseCase;
+import com.investmentmanager.portfolioevent.domain.port.out.BrokerRegistryPort;
 import com.investmentmanager.portfolioevent.domain.port.out.PortfolioEventRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,21 +22,18 @@ public class SubscriptionService implements SubscriptionUseCase {
 
     private final PortfolioEventRepositoryPort repository;
     private final PositionImpactGenerationService impactGenerationService;
+    private final BrokerRegistryPort brokerRegistryPort;
 
     @Override
     public PortfolioEvent create(CreateSubscriptionCommand command) {
         validate(command);
-        String brokerKey = BrokerIdentityResolver.resolve(
-                command.getBrokerName(),
-                command.getBrokerDocument()).getBrokerKey();
 
-        if (repository.existsSubscriptionByBusinessKey(
+        var broker = brokerRegistryPort.resolveOrCreate(command.getBrokerName(), command.getBrokerDocument());
+        String sourceReferenceId = "SUBSCRIPTION:%s:%s:%s:%s".formatted(
                 command.getTargetTicker(),
                 command.getTargetAssetType(),
-                brokerKey,
-                command.getSubscriptionDate())) {
-            throw new IllegalStateException("Subscrição duplicada para a mesma posição e data");
-        }
+                broker.getId(),
+                command.getSubscriptionDate());
 
         PortfolioEvent subscription = PortfolioEvent.builder()
                 .eventType(EventType.SUBSCRIPTION)
@@ -50,16 +47,11 @@ public class SubscriptionService implements SubscriptionUseCase {
                 .fee(MonetaryValue.of(command.getFee()))
                 .currency(command.getCurrency() != null ? command.getCurrency() : "BRL")
                 .eventDate(command.getSubscriptionDate())
-                .brokerName(command.getBrokerName())
-                .brokerDocument(command.getBrokerDocument())
-                .brokerKey(brokerKey)
-                .sourceReferenceId("SUBSCRIPTION:%s:%s:%s:%s".formatted(
-                        command.getTargetTicker(),
-                        command.getTargetAssetType(),
-                        brokerKey,
-                        command.getSubscriptionDate()))
+                .brokerId(broker.getId())
+                .sourceReferenceId(sourceReferenceId)
                 .createdAt(LocalDateTime.now())
-                .build();
+                .build()
+                .withIdempotencyKey();
 
         PortfolioEvent saved = repository.saveAll(List.of(subscription)).getFirst();
         impactGenerationService.generateAndPublish(List.of(saved));
@@ -104,12 +96,11 @@ public class SubscriptionService implements SubscriptionUseCase {
                 .fee(subscription.getFee())
                 .currency(subscription.getCurrency())
                 .eventDate(conversionDate)
-                .brokerName(subscription.getBrokerName())
-                .brokerDocument(subscription.getBrokerDocument())
-                .brokerKey(subscription.getBrokerKey())
+                .brokerId(subscription.getBrokerId())
                 .sourceReferenceId(subscriptionEventId)
                 .createdAt(LocalDateTime.now())
-                .build();
+                .build()
+                .withIdempotencyKey();
 
         PortfolioEvent saved = repository.saveAll(List.of(conversion)).getFirst();
         impactGenerationService.generateAndPublish(List.of(saved));

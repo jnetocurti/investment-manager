@@ -13,7 +13,6 @@ import com.investmentmanager.assetposition.domain.service.impact.PositionApplyRe
 import com.investmentmanager.assetposition.domain.service.impact.PositionImpactApplierRegistry;
 import com.investmentmanager.assetposition.domain.service.impact.PositionState;
 import com.investmentmanager.commons.domain.model.AssetType;
-import com.investmentmanager.commons.domain.model.BrokerIdentityResolver;
 import com.investmentmanager.commons.domain.model.MonetaryValue;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,9 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -44,29 +41,17 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
     }
 
     @Override
-    public AssetPosition calculatePosition(String assetName, AssetType assetType, String brokerName, String brokerDocument) {
-        BrokerIdentityResolver.BrokerIdentity brokerIdentity = BrokerIdentityResolver.resolve(brokerName, brokerDocument);
-        Optional<BrokerRegistry> registry = brokerRegistryRepository.findByBrokerKey(brokerIdentity.getBrokerKey());
-
-        LinkedHashSet<String> brokerDocuments = new LinkedHashSet<>(brokerIdentity.getKnownDocuments());
-        LinkedHashSet<String> brokerNames = new LinkedHashSet<>(brokerIdentity.getKnownNames());
-        registry.ifPresent(value -> {
-            brokerDocuments.addAll(value.getKnownDocuments());
-            brokerNames.addAll(value.getKnownNames());
-        });
+    public AssetPosition calculatePosition(String assetName, AssetType assetType, String brokerId) {
+        BrokerRegistry registry = brokerRegistryRepository.findById(brokerId)
+                .orElseThrow(() -> new IllegalStateException("Broker não encontrado para brokerId=" + brokerId));
 
         List<PositionImpactData> impacts = impactQueryPort
-                .findByTickerAndAssetTypeAndBrokerAliases(
-                        assetName,
-                        assetType,
-                        new ArrayList<>(brokerDocuments),
-                        new ArrayList<>(brokerNames))
+                .findByTickerAndAssetTypeAndBrokerId(assetName, assetType, brokerId)
                 .stream()
                 .toList();
 
         if (impacts.isEmpty()) {
-            log.info("Nenhum impacto encontrado para asset={}, brokerKey={}, brokerDocs={}, brokerNames={}",
-                    assetName, brokerIdentity.getBrokerKey(), brokerDocuments, brokerNames);
+            log.info("Nenhum impacto encontrado para asset={}, brokerId={}", assetName, brokerId);
             return null;
         }
 
@@ -75,26 +60,9 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
                 .averagePrice(MonetaryValue.zero())
                 .totalCost(MonetaryValue.zero())
                 .build();
-        String latestBrokerName = impacts.getFirst().getBrokerName();
-        String latestBrokerDocument = impacts.getFirst().getBrokerDocument();
-        String previousBrokerName = latestBrokerName;
-        String previousBrokerDocument = latestBrokerDocument;
+
         List<AssetPositionSnapshot> allSnapshots = new ArrayList<>();
-
         for (PositionImpactData impact : impacts) {
-            String observation = buildBrokerChangeObservation(
-                    previousBrokerName,
-                    impact.getBrokerName(),
-                    previousBrokerDocument,
-                    impact.getBrokerDocument());
-
-            previousBrokerName = impact.getBrokerName();
-            previousBrokerDocument = impact.getBrokerDocument();
-            latestBrokerName = impact.getBrokerName();
-            latestBrokerDocument = impact.getBrokerDocument();
-            brokerNames.add(impact.getBrokerName());
-            brokerDocuments.add(impact.getBrokerDocument());
-
             PositionApplyResult result = impactApplierRegistry.apply(state, impact);
             state = result.getState();
 
@@ -106,69 +74,14 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
                     .sourceType(impact.getSourceType())
                     .sourceReferenceId(impact.getSourceReferenceId() != null ? impact.getSourceReferenceId()
                             : impact.getOriginalEventId() + ":" + impact.getSequence())
-                    .observation(observation)
                     .recordedAt(LocalDateTime.now())
                     .build();
             allSnapshots.add(snapshot);
         }
 
-        BrokerRegistry savedRegistry = saveOrUpdateBrokerRegistry(
-                registry,
-                brokerIdentity.getBrokerKey(),
-                latestBrokerName,
-                latestBrokerDocument,
-                new ArrayList<>(brokerNames),
-                new ArrayList<>(brokerDocuments));
-
         AssetType resolvedAssetType = assetType != null ? assetType : impacts.getLast().getAssetType();
-        return persistPosition(assetName, savedRegistry, state.getQuantity(), state.getAveragePrice(), state.getTotalCost(),
+        return persistPosition(assetName, registry, state.getQuantity(), state.getAveragePrice(), state.getTotalCost(),
                 resolvedAssetType, allSnapshots);
-    }
-
-    private String buildBrokerChangeObservation(String previousBrokerName,
-                                                String currentBrokerName,
-                                                String previousBrokerDocument,
-                                                String currentBrokerDocument) {
-        boolean nameChanged = previousBrokerName != null && !previousBrokerName.equals(currentBrokerName);
-        boolean documentChanged = previousBrokerDocument != null && !previousBrokerDocument.equals(currentBrokerDocument);
-
-        if (nameChanged && documentChanged) {
-            return "Cadastro da corretora atualizado: nome " + previousBrokerName + " -> " + currentBrokerName
-                    + " e documento " + previousBrokerDocument + " -> " + currentBrokerDocument;
-        }
-        if (nameChanged) {
-            return "Cadastro da corretora atualizado: nome " + previousBrokerName + " -> " + currentBrokerName;
-        }
-        if (documentChanged) {
-            return "Cadastro da corretora atualizado: documento " + previousBrokerDocument + " -> " + currentBrokerDocument;
-        }
-        return null;
-    }
-
-    private BrokerRegistry saveOrUpdateBrokerRegistry(Optional<BrokerRegistry> registry,
-                                                      String brokerKey,
-                                                      String currentBrokerName,
-                                                      String currentBrokerDocument,
-                                                      List<String> knownNames,
-                                                      List<String> knownDocuments) {
-        BrokerRegistry toSave = registry
-                .map(existing -> existing.toBuilder()
-                        .currentName(currentBrokerName)
-                        .currentDocument(currentBrokerDocument)
-                        .knownNames(knownNames)
-                        .knownDocuments(knownDocuments)
-                        .updatedAt(LocalDateTime.now())
-                        .build())
-                .orElse(BrokerRegistry.builder()
-                        .brokerKey(brokerKey)
-                        .currentName(currentBrokerName)
-                        .currentDocument(currentBrokerDocument)
-                        .knownNames(knownNames)
-                        .knownDocuments(knownDocuments)
-                        .updatedAt(LocalDateTime.now())
-                        .build());
-
-        return brokerRegistryRepository.save(toSave);
     }
 
     private AssetPosition persistPosition(String assetName,
@@ -178,15 +91,15 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
                                           MonetaryValue totalCost,
                                           AssetType assetType,
                                           List<AssetPositionSnapshot> allSnapshots) {
-        historyRepository.deleteByAssetNameAndBrokerKey(assetName, brokerRegistry.getBrokerKey());
-        historyRepository.saveAll(allSnapshots, assetName, brokerRegistry.getBrokerKey());
+        historyRepository.deleteByAssetNameAndBrokerKey(assetName, brokerRegistry.getId());
+        historyRepository.saveAll(allSnapshots, assetName, brokerRegistry.getId());
 
         List<AssetPositionSnapshot> last10 = new ArrayList<>(allSnapshots.subList(
                 Math.max(0, allSnapshots.size() - 10), allSnapshots.size()));
         Collections.reverse(last10);
 
-        AssetPosition position = positionRepository.findByAssetNameAndAssetTypeAndBrokerKey(
-                        assetName, assetType, brokerRegistry.getBrokerKey())
+        AssetPosition position = positionRepository.findByAssetNameAndAssetTypeAndBrokerId(
+                        assetName, assetType, brokerRegistry.getId())
                 .map(existing -> existing.toBuilder()
                         .assetType(assetType)
                         .brokerName(brokerRegistry.getCurrentName())
@@ -200,7 +113,7 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
                 .orElse(AssetPosition.builder()
                         .assetName(assetName)
                         .assetType(assetType)
-                        .brokerKey(brokerRegistry.getBrokerKey())
+                        .brokerId(brokerRegistry.getId())
                         .brokerName(brokerRegistry.getCurrentName())
                         .brokerDocument(brokerRegistry.getCurrentDocument())
                         .quantity(quantity)
@@ -212,8 +125,8 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
                         .build());
 
         AssetPosition saved = positionRepository.save(position);
-        log.info("Posição calculada: asset={}, brokerKey={}, brokerAtual={} ({}), qty={}, avgPrice={}",
-                assetName, brokerRegistry.getBrokerKey(), brokerRegistry.getCurrentName(),
+        log.info("Posição calculada: asset={}, brokerId={}, brokerAtual={} ({}), qty={}, avgPrice={}",
+                assetName, brokerRegistry.getId(), brokerRegistry.getCurrentName(),
                 brokerRegistry.getCurrentDocument(), quantity, avgPrice);
         return saved;
     }

@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @Document(collection = "position_impact_events")
 @CompoundIndexes({
         @CompoundIndex(name = "uk_impact_idempotency", def = "{'originalEventId': 1, 'impactType': 1, 'sequence': 1}", unique = true),
-        @CompoundIndex(name = "idx_ticker_type_broker_date_seq", def = "{'ticker': 1, 'assetType': 1, 'brokerDocument': 1, 'eventDate': 1, 'sequence': 1}")
+        @CompoundIndex(name = "idx_ticker_type_broker_date_seq", def = "{'ticker': 1, 'assetType': 1, 'brokerId': 1, 'eventDate': 1, 'sequence': 1}")
 })
 public class PositionImpactEventDocument {
 
@@ -34,11 +34,9 @@ public class PositionImpactEventDocument {
     private LocalDate eventDate;
     private String originType;
     private String sourceType;
-    private String brokerName;
-    private String brokerDocument;
+    private String brokerId;
     private String sourceReferenceId;
     private Integer schemaVersion;
-    // Compat legada: eventos gravados anteriormente com campo version
     private Integer version;
     private LocalDateTime createdAt;
 }

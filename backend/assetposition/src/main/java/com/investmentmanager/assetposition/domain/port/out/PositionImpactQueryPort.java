@@ -1,16 +1,14 @@
 package com.investmentmanager.assetposition.domain.port.out;
 
 import com.investmentmanager.assetposition.domain.model.PositionImpactData;
-
 import com.investmentmanager.commons.domain.model.AssetType;
 
 import java.util.List;
 
 public interface PositionImpactQueryPort {
 
-    List<PositionImpactData> findByTickerAndAssetTypeAndBrokerAliases(
+    List<PositionImpactData> findByTickerAndAssetTypeAndBrokerId(
             String ticker,
             AssetType assetType,
-            List<String> brokerDocuments,
-            List<String> brokerNames);
+            String brokerId);
 }

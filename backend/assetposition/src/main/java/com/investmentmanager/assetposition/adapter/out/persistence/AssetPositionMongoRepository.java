@@ -6,8 +6,8 @@ import java.util.Optional;
 
 interface AssetPositionMongoRepository extends MongoRepository<AssetPositionDocument, String> {
 
-    Optional<AssetPositionDocument> findByAssetNameAndAssetTypeAndBrokerKey(
+    Optional<AssetPositionDocument> findByAssetNameAndAssetTypeAndBrokerId(
             String assetName,
             String assetType,
-            String brokerKey);
+            String brokerId);
 }

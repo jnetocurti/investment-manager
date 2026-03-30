@@ -1,6 +1,7 @@
 package com.investmentmanager.portfolioevent.adapter.config;
 
 import com.investmentmanager.portfolioevent.domain.port.out.AssetDetailResolverPort;
+import com.investmentmanager.portfolioevent.domain.port.out.BrokerRegistryPort;
 import com.investmentmanager.portfolioevent.domain.port.out.PortfolioEventRepositoryPort;
 import com.investmentmanager.portfolioevent.domain.port.out.PositionImpactEventPublisherPort;
 import com.investmentmanager.portfolioevent.domain.port.out.PositionImpactEventRepositoryPort;
@@ -22,24 +23,16 @@ import java.util.List;
 public class PortfolioEventConfig {
 
     @Bean
-    public BuyEventImpactTranslator buyEventImpactTranslator() {
-        return new BuyEventImpactTranslator();
-    }
+    public BuyEventImpactTranslator buyEventImpactTranslator() { return new BuyEventImpactTranslator(); }
 
     @Bean
-    public SellEventImpactTranslator sellEventImpactTranslator() {
-        return new SellEventImpactTranslator();
-    }
+    public SellEventImpactTranslator sellEventImpactTranslator() { return new SellEventImpactTranslator(); }
 
     @Bean
-    public SubscriptionPendingImpactTranslator subscriptionPendingImpactTranslator() {
-        return new SubscriptionPendingImpactTranslator();
-    }
+    public SubscriptionPendingImpactTranslator subscriptionPendingImpactTranslator() { return new SubscriptionPendingImpactTranslator(); }
 
     @Bean
-    public SubscriptionConversionImpactTranslator subscriptionConversionImpactTranslator() {
-        return new SubscriptionConversionImpactTranslator();
-    }
+    public SubscriptionConversionImpactTranslator subscriptionConversionImpactTranslator() { return new SubscriptionConversionImpactTranslator(); }
 
     @Bean
     public PositionImpactTranslatorRegistry positionImpactTranslatorRegistry(
@@ -66,14 +59,16 @@ public class PortfolioEventConfig {
     public PortfolioEventService portfolioEventService(
             PortfolioEventRepositoryPort repository,
             AssetDetailResolverPort assetDetailResolver,
-            PositionImpactGenerationService impactGenerationService) {
-        return new PortfolioEventService(repository, assetDetailResolver, impactGenerationService);
+            PositionImpactGenerationService impactGenerationService,
+            BrokerRegistryPort brokerRegistryPort) {
+        return new PortfolioEventService(repository, assetDetailResolver, impactGenerationService, brokerRegistryPort);
     }
 
     @Bean
     public SubscriptionService subscriptionService(
             PortfolioEventRepositoryPort repository,
-            PositionImpactGenerationService impactGenerationService) {
-        return new SubscriptionService(repository, impactGenerationService);
+            PositionImpactGenerationService impactGenerationService,
+            BrokerRegistryPort brokerRegistryPort) {
+        return new SubscriptionService(repository, impactGenerationService, brokerRegistryPort);
     }
 }

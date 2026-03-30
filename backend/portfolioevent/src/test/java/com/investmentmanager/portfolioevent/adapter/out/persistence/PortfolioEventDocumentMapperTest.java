@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class PortfolioEventDocumentMapperTest {
 
     @Test
-    void shouldMapMetadataAndBrokerKeyToDocumentAndBack() {
+    void shouldMapMetadataAndBrokerIdToDocumentAndBack() {
         PortfolioEvent event = PortfolioEvent.builder()
                 .id("evt-1")
                 .eventType(EventType.SUBSCRIPTION)
@@ -29,23 +29,24 @@ class PortfolioEventDocumentMapperTest {
                 .fee(MonetaryValue.zero())
                 .currency("BRL")
                 .eventDate(LocalDate.of(2026, 3, 30))
-                .brokerName("Clear")
-                .brokerDocument("02.332.886/0001-04")
-                .brokerKey("CLEAR")
-                .sourceReferenceId("SUBSCRIPTION:PETR4:STOCKS_BRL:CLEAR:2026-03-30")
+                .brokerId("broker-1")
+                .sourceReferenceId("SUBSCRIPTION:PETR4:STOCKS_BRL:broker-1:2026-03-30")
+                .idempotencyKey("IDEMP-1")
                 .metadata(PortfolioEventMetadata.subscription("PETR12"))
                 .createdAt(LocalDateTime.now())
                 .build();
 
         PortfolioEventDocument doc = PortfolioEventDocumentMapper.toDocument(event);
 
-        assertEquals("CLEAR", doc.getBrokerKey());
+        assertEquals("broker-1", doc.getBrokerId());
+        assertEquals("IDEMP-1", doc.getIdempotencyKey());
         assertNotNull(doc.getMetadata());
         assertEquals("PETR12", doc.getMetadata().getSubscriptionTicker());
 
         PortfolioEvent mapped = PortfolioEventDocumentMapper.toDomain(doc);
 
-        assertEquals("CLEAR", mapped.getBrokerKey());
+        assertEquals("broker-1", mapped.getBrokerId());
+        assertEquals("IDEMP-1", mapped.getIdempotencyKey());
         assertNotNull(mapped.getMetadata());
         assertEquals("PETR12", mapped.getMetadata().getSubscriptionTicker());
     }

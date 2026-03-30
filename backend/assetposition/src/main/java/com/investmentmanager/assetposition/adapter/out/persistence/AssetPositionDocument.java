@@ -13,7 +13,7 @@ import java.util.List;
 @Data
 @Document(collection = "asset_positions")
 @CompoundIndexes({
-    @CompoundIndex(name = "idx_asset_type_broker", def = "{'assetName': 1, 'assetType': 1, 'brokerKey': 1}", unique = true)
+    @CompoundIndex(name = "idx_asset_type_broker", def = "{'assetName': 1, 'assetType': 1, 'brokerId': 1}", unique = true)
 })
 class AssetPositionDocument {
 
@@ -21,7 +21,7 @@ class AssetPositionDocument {
     private String id;
     private String assetName;
     private String assetType;
-    private String brokerKey;
+    private String brokerId;
     private String brokerName;
     private String brokerDocument;
     private int quantity;

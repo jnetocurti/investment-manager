@@ -71,7 +71,7 @@ public class SubscriptionController {
                 event.getUnitPrice().toString(),
                 event.getTotalValue().toString(),
                 event.getFee().toString(),
-                event.getBrokerName(),
+                event.getBrokerId(),
                 event.getEventDate().toString());
     }
 
@@ -101,7 +101,7 @@ public class SubscriptionController {
             String unitPrice,
             String totalValue,
             String fee,
-            String brokerName,
+            String brokerId,
             String eventDate
     ) {}
 }

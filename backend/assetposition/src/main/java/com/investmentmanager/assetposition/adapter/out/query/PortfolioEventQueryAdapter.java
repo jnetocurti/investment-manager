@@ -10,11 +10,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-/**
- * Wrapper cross-module: implementa o port do domínio assetposition
- * delegando ao repository do módulo irmão portfolioevent.
- * Em microserviços, substituir por implementação HTTP/gRPC.
- */
 @Component
 @RequiredArgsConstructor
 class PortfolioEventQueryAdapter implements PortfolioEventQueryPort {
@@ -22,18 +17,17 @@ class PortfolioEventQueryAdapter implements PortfolioEventQueryPort {
     private final PortfolioEventMongoRepository portfolioEventRepository;
 
     @Override
-    public List<PortfolioEventData> findByAssetNameAndBrokerDocumentOrderByEventDate(
-            String assetName, String brokerDocument) {
+    public List<PortfolioEventData> findByAssetNameAndBrokerIdOrderByEventDate(
+            String assetName, String brokerId) {
         return portfolioEventRepository
-                .findByAssetNameAndBrokerDocumentOrderByEventDateAsc(assetName, brokerDocument)
+                .findByAssetNameAndBrokerIdOrderByEventDateAsc(assetName, brokerId)
                 .stream()
                 .map(doc -> PortfolioEventData.builder()
                         .id(doc.getId())
                         .eventType(doc.getEventType())
                         .assetName(doc.getAssetName())
                         .assetType(doc.getAssetType() != null ? AssetType.valueOf(doc.getAssetType()) : null)
-                        .brokerName(doc.getBrokerName())
-                        .brokerDocument(doc.getBrokerDocument())
+                        .brokerId(doc.getBrokerId())
                         .quantity(doc.getQuantity())
                         .totalValue(MonetaryValue.of(doc.getTotalValue()))
                         .fee(MonetaryValue.of(doc.getFee()))

@@ -2,11 +2,9 @@ package com.investmentmanager.portfolioevent.domain.service;
 
 import com.investmentmanager.commons.domain.model.AssetType;
 import com.investmentmanager.commons.domain.model.MonetaryValue;
-import com.investmentmanager.portfolioevent.domain.model.EventSource;
-import com.investmentmanager.portfolioevent.domain.model.EventType;
-import com.investmentmanager.portfolioevent.domain.model.PortfolioEvent;
-import com.investmentmanager.portfolioevent.domain.model.PortfolioEventMetadata;
+import com.investmentmanager.portfolioevent.domain.model.*;
 import com.investmentmanager.portfolioevent.domain.port.in.CreateSubscriptionCommand;
+import com.investmentmanager.portfolioevent.domain.port.out.BrokerRegistryPort;
 import com.investmentmanager.portfolioevent.domain.port.out.PortfolioEventRepositoryPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,20 +23,22 @@ class SubscriptionServiceTest {
 
     private PortfolioEventRepositoryPort repository;
     private PositionImpactGenerationService impactGenerationService;
+    private BrokerRegistryPort brokerRegistryPort;
     private SubscriptionService service;
 
     @BeforeEach
     void setUp() {
         repository = mock(PortfolioEventRepositoryPort.class);
         impactGenerationService = mock(PositionImpactGenerationService.class);
-        service = new SubscriptionService(repository, impactGenerationService);
+        brokerRegistryPort = mock(BrokerRegistryPort.class);
+        service = new SubscriptionService(repository, impactGenerationService, brokerRegistryPort);
+        when(brokerRegistryPort.resolveOrCreate(any(), any())).thenReturn(BrokerRecord.builder().id("broker-1").brokerKey("CLEAR").build());
     }
 
     @Test
     void shouldCreateSubscriptionWithMetadata() {
         CreateSubscriptionCommand command = command(LocalDate.of(2026, 3, 30), "PETR4");
 
-        when(repository.existsSubscriptionByBusinessKey(any(), any(), any(), any())).thenReturn(false);
         when(repository.saveAll(any())).thenAnswer(inv -> {
             PortfolioEvent unsaved = inv.<List<PortfolioEvent>>getArgument(0).getFirst();
             return List.of(unsaved.toBuilder().id("sub-1").build());
@@ -51,37 +51,7 @@ class SubscriptionServiceTest {
         assertEquals(EventType.SUBSCRIPTION, result.getEventType());
         assertNotNull(result.getMetadata());
         assertEquals("PETR12", result.getMetadata().getSubscriptionTicker());
-        verify(repository, times(1)).existsSubscriptionByBusinessKey(
-                eq("PETR4"), eq(AssetType.STOCKS_BRL), anyString(), eq(LocalDate.of(2026, 3, 30)));
-    }
-
-    @Test
-    void shouldRejectDuplicateSubscriptionByBusinessKey() {
-        CreateSubscriptionCommand command = command(LocalDate.of(2026, 3, 30), "PETR4");
-
-        when(repository.existsSubscriptionByBusinessKey(any(), any(), any(), any())).thenReturn(true);
-
-        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> service.create(command));
-        assertEquals("Subscrição duplicada para a mesma posição e data", ex.getMessage());
-        verify(repository, never()).saveAll(any());
-        verifyNoInteractions(impactGenerationService);
-    }
-
-    @Test
-    void shouldAllowCreationWhenDateChanges() {
-        CreateSubscriptionCommand day1 = command(LocalDate.of(2026, 3, 30), "PETR4");
-        CreateSubscriptionCommand day2 = command(LocalDate.of(2026, 3, 31), "PETR4");
-
-        when(repository.existsSubscriptionByBusinessKey(any(), any(), any(), eq(LocalDate.of(2026, 3, 30))))
-                .thenReturn(false);
-        when(repository.existsSubscriptionByBusinessKey(any(), any(), any(), eq(LocalDate.of(2026, 3, 31))))
-                .thenReturn(false);
-        when(repository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(impactGenerationService.generateAndPublish(any())).thenReturn(List.of());
-
-        assertDoesNotThrow(() -> service.create(day1));
-        assertDoesNotThrow(() -> service.create(day2));
-        verify(repository, times(2)).saveAll(any());
+        assertEquals("broker-1", result.getBrokerId());
     }
 
     @Test
@@ -98,10 +68,9 @@ class SubscriptionServiceTest {
                 .fee(MonetaryValue.zero())
                 .currency("BRL")
                 .eventDate(LocalDate.of(2026, 3, 30))
-                .brokerName("Clear")
-                .brokerDocument("02.332.886/0001-04")
-                .brokerKey("CLEAR")
+                .brokerId("broker-1")
                 .sourceReferenceId("ref-1")
+                .idempotencyKey("k1")
                 .metadata(PortfolioEventMetadata.subscription("PETR12"))
                 .createdAt(LocalDateTime.now())
                 .build();

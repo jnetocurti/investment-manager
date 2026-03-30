@@ -19,6 +19,11 @@ class BrokerRegistryPersistenceAdapter implements BrokerRegistryRepositoryPort {
     }
 
     @Override
+    public Optional<BrokerRegistry> findById(String brokerId) {
+        return repository.findById(brokerId).map(BrokerRegistryDocumentMapper::toDomain);
+    }
+
+    @Override
     public BrokerRegistry save(BrokerRegistry brokerRegistry) {
         var saved = repository.save(BrokerRegistryDocumentMapper.toDocument(brokerRegistry));
         return BrokerRegistryDocumentMapper.toDomain(saved);

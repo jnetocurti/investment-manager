@@ -7,10 +7,6 @@ import lombok.Getter;
 
 import java.time.LocalDate;
 
-/**
- * Projeção de leitura de um evento de portfólio.
- * Definido no domínio do assetposition — desacoplado do módulo portfolioevent.
- */
 @Getter
 @Builder
 public class PortfolioEventData {
@@ -19,8 +15,7 @@ public class PortfolioEventData {
     private final String eventType;
     private final String assetName;
     private final AssetType assetType;
-    private final String brokerName;
-    private final String brokerDocument;
+    private final String brokerId;
     private final int quantity;
     private final MonetaryValue totalValue;
     private final MonetaryValue fee;

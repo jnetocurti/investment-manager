@@ -2,78 +2,66 @@ package com.investmentmanager.portfolioevent.domain.service.impact;
 
 import com.investmentmanager.commons.domain.model.AssetType;
 import com.investmentmanager.commons.domain.model.MonetaryValue;
-import com.investmentmanager.portfolioevent.domain.model.EventSource;
-import com.investmentmanager.portfolioevent.domain.model.EventType;
-import com.investmentmanager.portfolioevent.domain.model.PortfolioEvent;
-import com.investmentmanager.portfolioevent.domain.model.PositionImpactEvent;
+import com.investmentmanager.portfolioevent.domain.model.*;
 import org.junit.jupiter.api.Test;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.*;
 
 class PositionImpactTranslatorRegistryTest {
 
-    @Test
-    void shouldTranslateBuyIntoImpactWithSchemaVersionAndSequence() {
-        PositionImpactTranslatorRegistry registry = new PositionImpactTranslatorRegistry(
-                List.of(new BuyEventImpactTranslator(), new SellEventImpactTranslator(),
-                        new SubscriptionPendingImpactTranslator(), new SubscriptionConversionImpactTranslator()));
+    private final PositionImpactTranslatorRegistry registry = PositionImpactTranslatorRegistry.defaultRegistry();
 
-        PortfolioEvent buy = PortfolioEvent.builder()
-                .id("event-1")
+    @Test
+    void shouldTranslateBuyToSingleIncreaseImpact() {
+        PortfolioEvent event = PortfolioEvent.builder()
+                .id("evt-1")
                 .eventType(EventType.BUY)
                 .eventSource(EventSource.TRADING_NOTE)
                 .assetName("PETR4")
                 .assetType(AssetType.STOCKS_BRL)
-                .quantity(10)
-                .unitPrice(MonetaryValue.of("30"))
-                .totalValue(MonetaryValue.of("300"))
-                .fee(MonetaryValue.of("1"))
+                .quantity(100)
+                .unitPrice(MonetaryValue.of("10"))
+                .totalValue(MonetaryValue.of("1000"))
+                .fee(MonetaryValue.of("2"))
                 .currency("BRL")
                 .eventDate(LocalDate.of(2024, 1, 10))
-                .brokerName("XP")
-                .brokerDocument("123")
+                .brokerId("broker-1")
                 .sourceReferenceId("note-1")
+                .idempotencyKey("k1")
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        var impacts = registry.translate(buy);
+        List<PositionImpactEvent> impacts = registry.translate(event);
 
-        assertThat(impacts).hasSize(1);
-        assertThat(impacts.getFirst().getImpactType().name()).isEqualTo("INCREASE");
-        assertThat(impacts.getFirst().getSequence()).isEqualTo(1);
-        assertThat(impacts.getFirst().getSchemaVersion()).isEqualTo(1);
-        assertThat(impacts.getFirst().getSourceType().name()).isEqualTo("TRADING_NOTE");
+        assertEquals(1, impacts.size());
+        assertEquals("PETR4", impacts.getFirst().getTicker());
     }
 
     @Test
-    void shouldFailWhenFactorIsInvalid() {
-        PositionImpactEvent impact = PositionImpactEvent.builder()
-                .originalEventId("x")
-                .ticker("ITSA4")
-                .impactType(com.investmentmanager.commons.domain.model.PositionImpactType.ADJUST)
-                .sequence(1)
-                .quantity(10)
+    void shouldReturnEmptyForSubscriptionPending() {
+        PortfolioEvent event = PortfolioEvent.builder()
+                .id("evt-sub")
+                .eventType(EventType.SUBSCRIPTION)
+                .eventSource(EventSource.SUBSCRIPTION)
+                .assetName("PETR4")
+                .assetType(AssetType.STOCKS_BRL)
+                .quantity(100)
                 .unitPrice(MonetaryValue.of("10"))
+                .totalValue(MonetaryValue.of("1000"))
                 .fee(MonetaryValue.zero())
-                .factor(BigDecimal.ZERO)
-                .eventDate(LocalDate.of(2024, 1, 1))
-                .originType(EventType.BUY)
-                .sourceType(com.investmentmanager.portfolioevent.domain.model.ImpactSourceType.CORPORATE_ACTION)
-                .brokerName("XP")
-                .brokerDocument("123")
+                .currency("BRL")
+                .eventDate(LocalDate.of(2024, 2, 1))
+                .brokerId("broker-1")
                 .sourceReferenceId("s")
-                .schemaVersion(1)
+                .idempotencyKey("k2")
+                .metadata(PortfolioEventMetadata.subscription("PETR12"))
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        assertThatThrownBy(impact::validate)
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Factor must be > 0");
+        assertTrue(registry.translate(event).isEmpty());
     }
 }

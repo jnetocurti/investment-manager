@@ -8,5 +8,7 @@ public interface BrokerRegistryRepositoryPort {
 
     Optional<BrokerRegistry> findByBrokerKey(String brokerKey);
 
+    Optional<BrokerRegistry> findById(String brokerId);
+
     BrokerRegistry save(BrokerRegistry brokerRegistry);
 }

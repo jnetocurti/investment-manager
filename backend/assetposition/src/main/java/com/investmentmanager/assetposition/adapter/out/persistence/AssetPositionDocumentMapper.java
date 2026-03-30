@@ -17,7 +17,7 @@ class AssetPositionDocumentMapper {
         doc.setId(position.getId());
         doc.setAssetName(position.getAssetName());
         doc.setAssetType(position.getAssetType() != null ? position.getAssetType().name() : null);
-        doc.setBrokerKey(position.getBrokerKey());
+        doc.setBrokerId(position.getBrokerId());
         doc.setBrokerName(position.getBrokerName());
         doc.setBrokerDocument(position.getBrokerDocument());
         doc.setQuantity(position.getQuantity());
@@ -36,7 +36,7 @@ class AssetPositionDocumentMapper {
                 .id(doc.getId())
                 .assetName(doc.getAssetName())
                 .assetType(doc.getAssetType() != null ? AssetType.valueOf(doc.getAssetType()) : null)
-                .brokerKey(doc.getBrokerKey())
+                .brokerId(doc.getBrokerId())
                 .brokerName(doc.getBrokerName())
                 .brokerDocument(doc.getBrokerDocument())
                 .quantity(doc.getQuantity())

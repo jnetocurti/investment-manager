@@ -5,6 +5,7 @@ import com.investmentmanager.portfolioevent.domain.model.PositionImpactEvent;
 import com.investmentmanager.portfolioevent.domain.port.in.CreatePortfolioEventsCommand;
 import com.investmentmanager.portfolioevent.domain.port.in.CreatePortfolioEventsUseCase;
 import com.investmentmanager.portfolioevent.domain.port.out.AssetDetailResolverPort;
+import com.investmentmanager.portfolioevent.domain.port.out.BrokerRegistryPort;
 import com.investmentmanager.portfolioevent.domain.port.out.PortfolioEventRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +20,7 @@ public class PortfolioEventService implements CreatePortfolioEventsUseCase {
     private final PortfolioEventRepositoryPort repository;
     private final AssetDetailResolverPort assetDetailResolver;
     private final PositionImpactGenerationService impactGenerationService;
+    private final BrokerRegistryPort brokerRegistryPort;
 
     @Override
     public List<PortfolioEvent> createFromTradingNote(CreatePortfolioEventsCommand command) {
@@ -29,13 +31,14 @@ public class PortfolioEventService implements CreatePortfolioEventsUseCase {
             return Collections.emptyList();
         }
 
+        var broker = brokerRegistryPort.resolveOrCreate(command.getBrokerName(), command.getBrokerDocument());
+
         List<PortfolioEvent> events = command.getOperations().stream()
                 .map(op -> {
                     var detail = assetDetailResolver.resolve(op.getAssetDescription());
                     return PortfolioEvent.fromOperation(
                             command.getTradingNoteId(),
-                            command.getBrokerName(),
-                            command.getBrokerDocument(),
+                            broker.getId(),
                             command.getTradingDate(),
                             detail.ticker(),
                             detail.assetType(),
