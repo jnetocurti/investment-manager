@@ -5,6 +5,7 @@ import com.investmentmanager.commons.domain.model.MonetaryValue;
 import com.investmentmanager.portfolioevent.domain.model.EventSource;
 import com.investmentmanager.portfolioevent.domain.model.EventType;
 import com.investmentmanager.portfolioevent.domain.model.PortfolioEvent;
+import com.investmentmanager.portfolioevent.domain.model.PortfolioEventMetadata;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -25,8 +26,9 @@ class PortfolioEventDocumentMapper {
         doc.setEventDate(event.getEventDate());
         doc.setBrokerName(event.getBrokerName());
         doc.setBrokerDocument(event.getBrokerDocument());
+        doc.setBrokerKey(event.getBrokerKey());
         doc.setSourceReferenceId(event.getSourceReferenceId());
-        doc.setSubscriptionTicker(event.getSubscriptionTicker());
+        doc.setMetadata(toMetadataDocument(event.getMetadata()));
         doc.setCreatedAt(event.getCreatedAt());
         return doc;
     }
@@ -46,9 +48,28 @@ class PortfolioEventDocumentMapper {
                 .eventDate(doc.getEventDate())
                 .brokerName(doc.getBrokerName())
                 .brokerDocument(doc.getBrokerDocument())
+                .brokerKey(doc.getBrokerKey())
                 .sourceReferenceId(doc.getSourceReferenceId())
-                .subscriptionTicker(doc.getSubscriptionTicker())
+                .metadata(toMetadata(doc.getMetadata()))
                 .createdAt(doc.getCreatedAt())
+                .build();
+    }
+
+    private static PortfolioEventDocument.MetadataDocument toMetadataDocument(PortfolioEventMetadata metadata) {
+        if (metadata == null) {
+            return null;
+        }
+        var metadataDocument = new PortfolioEventDocument.MetadataDocument();
+        metadataDocument.setSubscriptionTicker(metadata.getSubscriptionTicker());
+        return metadataDocument;
+    }
+
+    private static PortfolioEventMetadata toMetadata(PortfolioEventDocument.MetadataDocument metadataDocument) {
+        if (metadataDocument == null) {
+            return null;
+        }
+        return PortfolioEventMetadata.builder()
+                .subscriptionTicker(metadataDocument.getSubscriptionTicker())
                 .build();
     }
 }

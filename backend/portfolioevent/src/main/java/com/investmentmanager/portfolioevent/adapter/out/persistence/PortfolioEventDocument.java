@@ -15,7 +15,12 @@ import java.time.LocalDateTime;
 @Document(collection = "portfolio_events")
 @CompoundIndexes({
     @CompoundIndex(name = "idx_asset_date", def = "{'assetName': 1, 'eventDate': 1}"),
-    @CompoundIndex(name = "idx_broker_date", def = "{'brokerName': 1, 'eventDate': 1}")
+    @CompoundIndex(name = "idx_broker_date", def = "{'brokerName': 1, 'eventDate': 1}"),
+    @CompoundIndex(
+            name = "uk_subscription_idempotency",
+            def = "{'eventType': 1, 'assetName': 1, 'assetType': 1, 'brokerKey': 1, 'eventDate': 1}",
+            unique = true,
+            partialFilter = "{'eventType': 'SUBSCRIPTION'}")
 })
 public class PortfolioEventDocument {
 
@@ -34,11 +39,17 @@ public class PortfolioEventDocument {
     private LocalDate eventDate;
     private String brokerName;
     private String brokerDocument;
+    private String brokerKey;
 
     @Indexed
     private String sourceReferenceId;
 
-    private String subscriptionTicker;
+    private MetadataDocument metadata;
 
     private LocalDateTime createdAt;
+
+    @Data
+    public static class MetadataDocument {
+        private String subscriptionTicker;
+    }
 }

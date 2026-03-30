@@ -43,6 +43,8 @@ public class SubscriptionController {
             return ResponseEntity.ok(toResponse(result));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (IllegalStateException e) {
+            return ResponseEntity.unprocessableEntity().body(e.getMessage());
         }
     }
 
@@ -63,7 +65,7 @@ public class SubscriptionController {
         return new SubscriptionResponse(
                 event.getId(),
                 event.getEventType().name(),
-                event.getSubscriptionTicker(),
+                event.getMetadata() != null ? event.getMetadata().getSubscriptionTicker() : null,
                 event.getAssetName(),
                 event.getQuantity(),
                 event.getUnitPrice().toString(),
