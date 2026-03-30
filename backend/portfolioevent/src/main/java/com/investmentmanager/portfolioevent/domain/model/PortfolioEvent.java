@@ -1,6 +1,7 @@
 package com.investmentmanager.portfolioevent.domain.model;
 
 import com.investmentmanager.commons.domain.model.AssetType;
+import com.investmentmanager.commons.domain.model.BrokerIdentityResolver;
 import com.investmentmanager.commons.domain.model.MonetaryValue;
 import com.investmentmanager.commons.domain.model.OperationType;
 import lombok.Builder;
@@ -35,8 +36,9 @@ public class PortfolioEvent {
     private final LocalDate eventDate;
     private final String brokerName;
     private final String brokerDocument;
+    private final String brokerKey;
     private final String sourceReferenceId;
-    private final String subscriptionTicker;
+    private final PortfolioEventMetadata metadata;
     private final LocalDateTime createdAt;
 
     /**
@@ -69,6 +71,7 @@ public class PortfolioEvent {
                 .eventDate(eventDate)
                 .brokerName(brokerName)
                 .brokerDocument(brokerDocument)
+                .brokerKey(BrokerIdentityResolver.resolve(brokerName, brokerDocument).getBrokerKey())
                 .sourceReferenceId(sourceReferenceId)
                 .createdAt(LocalDateTime.now())
                 .build();

@@ -1,9 +1,11 @@
 package com.investmentmanager.portfolioevent.domain.service;
 
+import com.investmentmanager.commons.domain.model.BrokerIdentityResolver;
 import com.investmentmanager.commons.domain.model.MonetaryValue;
 import com.investmentmanager.portfolioevent.domain.model.EventSource;
 import com.investmentmanager.portfolioevent.domain.model.EventType;
 import com.investmentmanager.portfolioevent.domain.model.PortfolioEvent;
+import com.investmentmanager.portfolioevent.domain.model.PortfolioEventMetadata;
 import com.investmentmanager.portfolioevent.domain.port.in.CreateSubscriptionCommand;
 import com.investmentmanager.portfolioevent.domain.port.in.SubscriptionUseCase;
 import com.investmentmanager.portfolioevent.domain.port.out.PortfolioEventRepositoryPort;
@@ -24,13 +26,24 @@ public class SubscriptionService implements SubscriptionUseCase {
     @Override
     public PortfolioEvent create(CreateSubscriptionCommand command) {
         validate(command);
+        String brokerKey = BrokerIdentityResolver.resolve(
+                command.getBrokerName(),
+                command.getBrokerDocument()).getBrokerKey();
+
+        if (repository.existsSubscriptionByBusinessKey(
+                command.getTargetTicker(),
+                command.getTargetAssetType(),
+                brokerKey,
+                command.getSubscriptionDate())) {
+            throw new IllegalStateException("Subscrição duplicada para a mesma posição e data");
+        }
 
         PortfolioEvent subscription = PortfolioEvent.builder()
                 .eventType(EventType.SUBSCRIPTION)
                 .eventSource(EventSource.SUBSCRIPTION)
                 .assetName(command.getTargetTicker())
                 .assetType(command.getTargetAssetType())
-                .subscriptionTicker(command.getSubscriptionTicker())
+                .metadata(PortfolioEventMetadata.subscription(command.getSubscriptionTicker()))
                 .quantity(command.getQuantity())
                 .unitPrice(MonetaryValue.of(command.getUnitPrice()))
                 .totalValue(MonetaryValue.of(command.getTotalValue()))
@@ -39,7 +52,12 @@ public class SubscriptionService implements SubscriptionUseCase {
                 .eventDate(command.getSubscriptionDate())
                 .brokerName(command.getBrokerName())
                 .brokerDocument(command.getBrokerDocument())
-                .sourceReferenceId(command.getSubscriptionTicker() + "-" + command.getSubscriptionDate())
+                .brokerKey(brokerKey)
+                .sourceReferenceId("SUBSCRIPTION:%s:%s:%s:%s".formatted(
+                        command.getTargetTicker(),
+                        command.getTargetAssetType(),
+                        brokerKey,
+                        command.getSubscriptionDate()))
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -79,7 +97,7 @@ public class SubscriptionService implements SubscriptionUseCase {
                 .eventSource(EventSource.SUBSCRIPTION)
                 .assetName(subscription.getAssetName())
                 .assetType(subscription.getAssetType())
-                .subscriptionTicker(subscription.getSubscriptionTicker())
+                .metadata(subscription.getMetadata())
                 .quantity(subscription.getQuantity())
                 .unitPrice(subscription.getUnitPrice())
                 .totalValue(subscription.getTotalValue())
@@ -88,6 +106,7 @@ public class SubscriptionService implements SubscriptionUseCase {
                 .eventDate(conversionDate)
                 .brokerName(subscription.getBrokerName())
                 .brokerDocument(subscription.getBrokerDocument())
+                .brokerKey(subscription.getBrokerKey())
                 .sourceReferenceId(subscriptionEventId)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -105,6 +124,8 @@ public class SubscriptionService implements SubscriptionUseCase {
             throw new IllegalArgumentException("Ticker da subscrição é obrigatório");
         if (command.getTargetTicker() == null || command.getTargetTicker().isBlank())
             throw new IllegalArgumentException("Ticker do ativo final é obrigatório");
+        if (command.getTargetAssetType() == null)
+            throw new IllegalArgumentException("Tipo do ativo final é obrigatório");
         if (command.getQuantity() <= 0)
             throw new IllegalArgumentException("Quantidade deve ser > 0");
         if (command.getUnitPrice() == null)
