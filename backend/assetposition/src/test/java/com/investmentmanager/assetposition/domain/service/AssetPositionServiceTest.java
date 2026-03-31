@@ -4,6 +4,7 @@ import com.investmentmanager.assetposition.domain.model.PositionImpactData;
 import com.investmentmanager.assetposition.domain.port.out.AssetPositionHistoryRepositoryPort;
 import com.investmentmanager.assetposition.domain.port.out.AssetPositionRepositoryPort;
 import com.investmentmanager.assetposition.domain.port.out.PositionImpactQueryPort;
+import com.investmentmanager.assetposition.domain.port.out.BrokerCatalogQueryPort;
 import com.investmentmanager.commons.domain.model.AssetType;
 import com.investmentmanager.commons.domain.model.MonetaryValue;
 import com.investmentmanager.commons.domain.model.PositionAdjustmentType;
@@ -28,10 +29,14 @@ class AssetPositionServiceTest {
         AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
         AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
 
+        BrokerCatalogQueryPort brokerCatalogQueryPort = mock(BrokerCatalogQueryPort.class);
+        when(brokerCatalogQueryPort.findByBrokerKey("BROKER_XP")).thenReturn(java.util.Optional.of(new BrokerCatalogQueryPort.BrokerDisplayData("XP", "12")));
+
         AssetPositionService service = new AssetPositionService(
                 impactQueryPort,
                 positionRepository,
-                historyRepository);
+                historyRepository,
+                brokerCatalogQueryPort);
 
         when(impactQueryPort.findByTickerAndAssetTypeAndBrokerKey("PETR4", AssetType.STOCKS_BRL, "BROKER_XP"))
                 .thenReturn(List.of(
@@ -55,7 +60,10 @@ class AssetPositionServiceTest {
         AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
         AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
 
-        AssetPositionService service = new AssetPositionService(impactQueryPort, positionRepository, historyRepository);
+        BrokerCatalogQueryPort brokerCatalogQueryPort = mock(BrokerCatalogQueryPort.class);
+        when(brokerCatalogQueryPort.findByBrokerKey("BROKER_XP")).thenReturn(java.util.Optional.of(new BrokerCatalogQueryPort.BrokerDisplayData("XP", "12")));
+
+        AssetPositionService service = new AssetPositionService(impactQueryPort, positionRepository, historyRepository, brokerCatalogQueryPort);
 
         List<PositionImpactData> replaySet = List.of(
                 impact("e1", "ITSA4", PositionImpactType.INCREASE, 100, "10", "0", LocalDate.of(2024, 1, 10), 1),

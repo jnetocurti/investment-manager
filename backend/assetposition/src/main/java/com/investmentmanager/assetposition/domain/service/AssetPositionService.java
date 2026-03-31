@@ -6,6 +6,7 @@ import com.investmentmanager.assetposition.domain.model.PositionImpactData;
 import com.investmentmanager.assetposition.domain.port.in.CalculateAssetPositionUseCase;
 import com.investmentmanager.assetposition.domain.port.out.AssetPositionHistoryRepositoryPort;
 import com.investmentmanager.assetposition.domain.port.out.AssetPositionRepositoryPort;
+import com.investmentmanager.assetposition.domain.port.out.BrokerCatalogQueryPort;
 import com.investmentmanager.assetposition.domain.port.out.PositionImpactQueryPort;
 import com.investmentmanager.assetposition.domain.service.impact.PositionApplyResult;
 import com.investmentmanager.assetposition.domain.service.impact.PositionImpactApplierRegistry;
@@ -27,12 +28,14 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
     private final PositionImpactQueryPort impactQueryPort;
     private final AssetPositionRepositoryPort positionRepository;
     private final AssetPositionHistoryRepositoryPort historyRepository;
+    private final BrokerCatalogQueryPort brokerCatalogQueryPort;
     private final PositionImpactApplierRegistry impactApplierRegistry;
 
     public AssetPositionService(PositionImpactQueryPort impactQueryPort,
                                 AssetPositionRepositoryPort positionRepository,
-                                AssetPositionHistoryRepositoryPort historyRepository) {
-        this(impactQueryPort, positionRepository, historyRepository,
+                                AssetPositionHistoryRepositoryPort historyRepository,
+                                BrokerCatalogQueryPort brokerCatalogQueryPort) {
+        this(impactQueryPort, positionRepository, historyRepository, brokerCatalogQueryPort,
                 PositionImpactApplierRegistry.defaultRegistry());
     }
 
@@ -86,6 +89,9 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
         historyRepository.deleteByAssetNameAndBrokerKey(assetName, brokerKey);
         historyRepository.saveAll(allSnapshots, assetName, brokerKey);
 
+        BrokerCatalogQueryPort.BrokerDisplayData brokerDisplay = brokerCatalogQueryPort.findByBrokerKey(brokerKey)
+                .orElse(new BrokerCatalogQueryPort.BrokerDisplayData(null, null));
+
         List<AssetPositionSnapshot> last10 = new ArrayList<>(allSnapshots.subList(
                 Math.max(0, allSnapshots.size() - 10), allSnapshots.size()));
         Collections.reverse(last10);
@@ -94,6 +100,8 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
                         assetName, assetType, brokerKey)
                 .map(existing -> existing.toBuilder()
                         .assetType(assetType)
+                        .brokerName(brokerDisplay.brokerName())
+                        .brokerDocument(brokerDisplay.brokerDocument())
                         .quantity(quantity)
                         .averagePrice(avgPrice)
                         .totalCost(totalCost)
@@ -104,6 +112,8 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
                         .assetName(assetName)
                         .assetType(assetType)
                         .brokerKey(brokerKey)
+                        .brokerName(brokerDisplay.brokerName())
+                        .brokerDocument(brokerDisplay.brokerDocument())
                         .quantity(quantity)
                         .averagePrice(avgPrice)
                         .totalCost(totalCost)
