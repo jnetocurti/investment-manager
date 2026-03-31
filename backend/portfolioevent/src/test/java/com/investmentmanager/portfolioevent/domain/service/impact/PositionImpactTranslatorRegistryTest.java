@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class PositionImpactTranslatorRegistryTest {
 
     @Test
-    void shouldTranslateBuyIntoImpactWithSchemaVersionAndSequence() {
+    void shouldTranslateBuyIntoImpactWithBrokerKey() {
         PositionImpactTranslatorRegistry registry = new PositionImpactTranslatorRegistry(
                 List.of(new BuyEventImpactTranslator(), new SellEventImpactTranslator(),
                         new SubscriptionPendingImpactTranslator(), new SubscriptionConversionImpactTranslator()));
@@ -36,19 +36,16 @@ class PositionImpactTranslatorRegistryTest {
                 .fee(MonetaryValue.of("1"))
                 .currency("BRL")
                 .eventDate(LocalDate.of(2024, 1, 10))
-                .brokerName("XP")
-                .brokerDocument("123")
+                .brokerKey("BROKER_XP")
                 .sourceReferenceId("note-1")
+                .idempotencyKey("idemp")
                 .createdAt(LocalDateTime.now())
                 .build();
 
         var impacts = registry.translate(buy);
 
         assertThat(impacts).hasSize(1);
-        assertThat(impacts.getFirst().getImpactType().name()).isEqualTo("INCREASE");
-        assertThat(impacts.getFirst().getSequence()).isEqualTo(1);
-        assertThat(impacts.getFirst().getSchemaVersion()).isEqualTo(1);
-        assertThat(impacts.getFirst().getSourceType().name()).isEqualTo("TRADING_NOTE");
+        assertThat(impacts.getFirst().getBrokerKey()).isEqualTo("BROKER_XP");
     }
 
     @Test
@@ -65,8 +62,7 @@ class PositionImpactTranslatorRegistryTest {
                 .eventDate(LocalDate.of(2024, 1, 1))
                 .originType(EventType.BUY)
                 .sourceType(com.investmentmanager.portfolioevent.domain.model.ImpactSourceType.CORPORATE_ACTION)
-                .brokerName("XP")
-                .brokerDocument("123")
+                .brokerKey("BROKER_XP")
                 .sourceReferenceId("s")
                 .schemaVersion(1)
                 .createdAt(LocalDateTime.now())

@@ -1,7 +1,6 @@
 package com.investmentmanager.portfolioevent.domain.service;
 
-import com.investmentmanager.commons.domain.model.BrokerIdentityResolver;
-import com.investmentmanager.commons.domain.model.MonetaryValue;
+import com.investmentmanager.portfolioevent.domain.model.BrokerResolutionInput;
 import com.investmentmanager.portfolioevent.domain.model.EventSource;
 import com.investmentmanager.portfolioevent.domain.model.EventType;
 import com.investmentmanager.portfolioevent.domain.model.PortfolioEvent;
@@ -13,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -22,44 +20,38 @@ public class SubscriptionService implements SubscriptionUseCase {
 
     private final PortfolioEventRepositoryPort repository;
     private final PositionImpactGenerationService impactGenerationService;
+    private final CanonicalBrokerResolver brokerResolver;
 
     @Override
     public PortfolioEvent create(CreateSubscriptionCommand command) {
         validate(command);
-        String brokerKey = BrokerIdentityResolver.resolve(
-                command.getBrokerName(),
-                command.getBrokerDocument()).getBrokerKey();
+        String brokerKey = brokerResolver.findOrCreateCanonicalBroker(BrokerResolutionInput.builder()
+                        .name(command.getBrokerName())
+                        .document(command.getBrokerDocument())
+                        .sourceSystem("SUBSCRIPTION")
+                        .sourceReferenceId(command.getTargetTicker() + ":" + command.getSubscriptionDate())
+                        .build())
+                .getBrokerKey();
 
-        if (repository.existsSubscriptionByBusinessKey(
+        String sourceReferenceId = "SUBSCRIPTION:%s:%s".formatted(command.getTargetTicker(), command.getSubscriptionDate());
+        PortfolioEvent subscription = PortfolioEvent.create(
+                EventType.SUBSCRIPTION,
+                EventSource.SUBSCRIPTION,
                 command.getTargetTicker(),
                 command.getTargetAssetType(),
+                command.getQuantity(),
+                command.getUnitPrice(),
+                command.getTotalValue(),
+                command.getFee(),
+                command.getCurrency(),
+                command.getSubscriptionDate(),
                 brokerKey,
-                command.getSubscriptionDate())) {
-            throw new IllegalStateException("Subscrição duplicada para a mesma posição e data");
-        }
+                sourceReferenceId,
+                PortfolioEventMetadata.subscription(command.getSubscriptionTicker()));
 
-        PortfolioEvent subscription = PortfolioEvent.builder()
-                .eventType(EventType.SUBSCRIPTION)
-                .eventSource(EventSource.SUBSCRIPTION)
-                .assetName(command.getTargetTicker())
-                .assetType(command.getTargetAssetType())
-                .metadata(PortfolioEventMetadata.subscription(command.getSubscriptionTicker()))
-                .quantity(command.getQuantity())
-                .unitPrice(MonetaryValue.of(command.getUnitPrice()))
-                .totalValue(MonetaryValue.of(command.getTotalValue()))
-                .fee(MonetaryValue.of(command.getFee()))
-                .currency(command.getCurrency() != null ? command.getCurrency() : "BRL")
-                .eventDate(command.getSubscriptionDate())
-                .brokerName(command.getBrokerName())
-                .brokerDocument(command.getBrokerDocument())
-                .brokerKey(brokerKey)
-                .sourceReferenceId("SUBSCRIPTION:%s:%s:%s:%s".formatted(
-                        command.getTargetTicker(),
-                        command.getTargetAssetType(),
-                        brokerKey,
-                        command.getSubscriptionDate()))
-                .createdAt(LocalDateTime.now())
-                .build();
+        if (repository.existsByIdempotencyKey(subscription.getIdempotencyKey())) {
+            throw new IllegalStateException("Subscrição duplicada para a mesma chave de idempotência");
+        }
 
         PortfolioEvent saved = repository.saveAll(List.of(subscription)).getFirst();
         impactGenerationService.generateAndPublish(List.of(saved));
@@ -82,34 +74,29 @@ public class SubscriptionService implements SubscriptionUseCase {
                     "Evento não é uma subscrição: " + subscriptionEventId);
         }
 
-        if (repository.existsBySourceReferenceId(subscriptionEventId)) {
-            throw new IllegalStateException(
-                    "Subscrição já convertida: " + subscriptionEventId);
-        }
-
         if (conversionDate.isBefore(subscription.getEventDate())) {
             throw new IllegalArgumentException(
                     "Data de conversão deve ser >= data de subscrição");
         }
 
-        PortfolioEvent conversion = PortfolioEvent.builder()
-                .eventType(EventType.SUBSCRIPTION_CONVERSION)
-                .eventSource(EventSource.SUBSCRIPTION)
-                .assetName(subscription.getAssetName())
-                .assetType(subscription.getAssetType())
-                .metadata(subscription.getMetadata())
-                .quantity(subscription.getQuantity())
-                .unitPrice(subscription.getUnitPrice())
-                .totalValue(subscription.getTotalValue())
-                .fee(subscription.getFee())
-                .currency(subscription.getCurrency())
-                .eventDate(conversionDate)
-                .brokerName(subscription.getBrokerName())
-                .brokerDocument(subscription.getBrokerDocument())
-                .brokerKey(subscription.getBrokerKey())
-                .sourceReferenceId(subscriptionEventId)
-                .createdAt(LocalDateTime.now())
-                .build();
+        PortfolioEvent conversion = PortfolioEvent.create(
+                EventType.SUBSCRIPTION_CONVERSION,
+                EventSource.SUBSCRIPTION,
+                subscription.getAssetName(),
+                subscription.getAssetType(),
+                subscription.getQuantity(),
+                subscription.getUnitPrice().toDisplayValue(),
+                subscription.getTotalValue().toDisplayValue(),
+                subscription.getFee().toDisplayValue(),
+                subscription.getCurrency(),
+                conversionDate,
+                subscription.getBrokerKey(),
+                subscriptionEventId,
+                subscription.getMetadata());
+
+        if (repository.existsByIdempotencyKey(conversion.getIdempotencyKey())) {
+            throw new IllegalStateException("Subscrição já convertida: " + subscriptionEventId);
+        }
 
         PortfolioEvent saved = repository.saveAll(List.of(conversion)).getFirst();
         impactGenerationService.generateAndPublish(List.of(saved));

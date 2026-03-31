@@ -30,8 +30,8 @@ public class SubscriptionConversionImpactTranslator implements PortfolioEventImp
                 .eventDate(event.getEventDate())
                 .originType(event.getEventType())
                 .sourceType(ImpactSourceType.SUBSCRIPTION)
-                .brokerName(event.getBrokerName())
-                .brokerDocument(event.getBrokerDocument())
+                .brokerKey(event.getBrokerKey())
+                
                 .sourceReferenceId(event.getSourceReferenceId())
                 .schemaVersion(1)
                 .createdAt(LocalDateTime.now())

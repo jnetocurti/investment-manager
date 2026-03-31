@@ -71,7 +71,7 @@ public class SubscriptionController {
                 event.getUnitPrice().toString(),
                 event.getTotalValue().toString(),
                 event.getFee().toString(),
-                event.getBrokerName(),
+                event.getBrokerKey(),
                 event.getEventDate().toString());
     }
 

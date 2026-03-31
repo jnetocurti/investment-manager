@@ -1,10 +1,8 @@
 package com.investmentmanager.assetposition.domain.service;
 
-import com.investmentmanager.assetposition.domain.model.BrokerRegistry;
 import com.investmentmanager.assetposition.domain.model.PositionImpactData;
 import com.investmentmanager.assetposition.domain.port.out.AssetPositionHistoryRepositoryPort;
 import com.investmentmanager.assetposition.domain.port.out.AssetPositionRepositoryPort;
-import com.investmentmanager.assetposition.domain.port.out.BrokerRegistryRepositoryPort;
 import com.investmentmanager.assetposition.domain.port.out.PositionImpactQueryPort;
 import com.investmentmanager.commons.domain.model.AssetType;
 import com.investmentmanager.commons.domain.model.MonetaryValue;
@@ -25,89 +23,30 @@ import static org.mockito.Mockito.*;
 class AssetPositionServiceTest {
 
     @Test
-    void shouldCalculateWhenImpactsComeOrderedFromQuery() {
+    void shouldCalculatePositionUsingBrokerKeyOnly() {
         PositionImpactQueryPort impactQueryPort = mock(PositionImpactQueryPort.class);
         AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
         AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
-        BrokerRegistryRepositoryPort brokerRegistryRepository = mock(BrokerRegistryRepositoryPort.class);
 
         AssetPositionService service = new AssetPositionService(
                 impactQueryPort,
                 positionRepository,
-                historyRepository,
-                brokerRegistryRepository);
+                historyRepository);
 
-        when(brokerRegistryRepository.findByBrokerKey("123")).thenReturn(Optional.empty());
-        when(impactQueryPort.findByTickerAndAssetTypeAndBrokerAliases(
-                "PETR4", AssetType.STOCKS_BRL, List.of("123"), List.of("XP"))).thenReturn(List.of(
-                impact("e2", PositionImpactType.DECREASE, 40, "11", "1", LocalDate.of(2024, 2, 10), "XP", "123", 2),
-                impact("e1", PositionImpactType.INCREASE, 100, "10", "1", LocalDate.of(2024, 1, 10), "XP", "123", 1)
-        ));
-        when(brokerRegistryRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        when(positionRepository.findByAssetNameAndAssetTypeAndBrokerKey("PETR4", AssetType.STOCKS_BRL, "123")).thenReturn(Optional.empty());
-        when(positionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-
-        var position = service.calculatePosition("PETR4", AssetType.STOCKS_BRL, "XP", "123");
-
-        assertThat(position).isNotNull();
-        assertThat(position.getQuantity()).isEqualTo(60);
-        assertThat(position.getCurrency()).isEqualTo("BRL");
-    }
-
-    @Test
-    void shouldMergeAliasesFromRegistryAndCaptureBrokerChangeObservation() {
-        PositionImpactQueryPort impactQueryPort = mock(PositionImpactQueryPort.class);
-        AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
-        AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
-        BrokerRegistryRepositoryPort brokerRegistryRepository = mock(BrokerRegistryRepositoryPort.class);
-
-        AssetPositionService service = new AssetPositionService(
-                impactQueryPort,
-                positionRepository,
-                historyRepository,
-                brokerRegistryRepository);
-
-        BrokerRegistry existingRegistry = BrokerRegistry.builder()
-                .brokerKey("CLEAR")
-                .currentName("CLEAR CORRETORA")
-                .currentDocument("02.332.886/0001-04")
-                .knownNames(List.of("CLEAR CORRETORA"))
-                .knownDocuments(List.of("02.332.886/0001-04"))
-                .updatedAt(LocalDateTime.now())
-                .build();
-
-        when(brokerRegistryRepository.findByBrokerKey("CLEAR")).thenReturn(Optional.of(existingRegistry));
-        when(impactQueryPort.findByTickerAndAssetTypeAndBrokerAliases(
-                "PETR4",
-                AssetType.STOCKS_BRL,
-                List.of("02.332.886/0001-04", "45.246.575/0001-78"),
-                List.of("CLEAR CORRETORA", "CLEAR")))
+        when(impactQueryPort.findByTickerAndAssetTypeAndBrokerKey("PETR4", AssetType.STOCKS_BRL, "BROKER_XP"))
                 .thenReturn(List.of(
-                        impact("e1", PositionImpactType.INCREASE, 100, "10", "0", LocalDate.of(2024, 1, 2),
-                                "CLEAR CORRETORA", "02.332.886/0001-04", 1),
-                        impact("e2", PositionImpactType.DECREASE, 40, "0", "0", LocalDate.of(2024, 2, 2),
-                                "CLEAR", "45.246.575/0001-78", 2)
+                        impact("e1", "PETR4", PositionImpactType.INCREASE, 100, "10", "1", LocalDate.of(2024, 1, 10), 1),
+                        impact("e2", "PETR4", PositionImpactType.DECREASE, 40, "11", "1", LocalDate.of(2024, 2, 10), 2)
                 ));
-
-        when(brokerRegistryRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        when(positionRepository.findByAssetNameAndAssetTypeAndBrokerKey("PETR4", AssetType.STOCKS_BRL, "CLEAR"))
+        when(positionRepository.findByAssetNameAndAssetTypeAndBrokerKey("PETR4", AssetType.STOCKS_BRL, "BROKER_XP"))
                 .thenReturn(Optional.empty());
         when(positionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        var position = service.calculatePosition("PETR4", AssetType.STOCKS_BRL, "CLEAR", "45.246.575/0001-78");
+        var position = service.calculatePosition("PETR4", AssetType.STOCKS_BRL, "BROKER_XP");
 
-        assertThat(position.getBrokerKey()).isEqualTo("CLEAR");
-        assertThat(position.getBrokerDocument()).isEqualTo("45.246.575/0001-78");
-
-        verify(historyRepository).saveAll(argThat(history ->
-                history.stream().anyMatch(snapshot -> snapshot.getObservation() != null
-                        && snapshot.getObservation().contains("Cadastro da corretora atualizado"))),
-                eq("PETR4"),
-                eq("CLEAR"));
-
-        verify(brokerRegistryRepository).save(argThat(saved ->
-                saved.getKnownDocuments().containsAll(List.of("02.332.886/0001-04", "45.246.575/0001-78"))
-                        && saved.getKnownNames().containsAll(List.of("CLEAR CORRETORA", "CLEAR"))));
+        assertThat(position).isNotNull();
+        assertThat(position.getBrokerKey()).isEqualTo("BROKER_XP");
+        assertThat(position.getQuantity()).isEqualTo(60);
     }
 
     @Test
@@ -115,70 +54,15 @@ class AssetPositionServiceTest {
         PositionImpactQueryPort impactQueryPort = mock(PositionImpactQueryPort.class);
         AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
         AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
-        BrokerRegistryRepositoryPort brokerRegistryRepository = mock(BrokerRegistryRepositoryPort.class);
 
-        AssetPositionService service = new AssetPositionService(
-                impactQueryPort,
-                positionRepository,
-                historyRepository,
-                brokerRegistryRepository);
+        AssetPositionService service = new AssetPositionService(impactQueryPort, positionRepository, historyRepository);
 
         List<PositionImpactData> replaySet = List.of(
-                impact("e1", PositionImpactType.INCREASE, 100, "10", "0", LocalDate.of(2024, 1, 10), "XP", "123", 1),
-                PositionImpactData.builder()
-                        .originalEventId("split")
-                        .sequence(1)
-                        .ticker("ITSA4")
-                        .assetType(AssetType.STOCKS_BRL)
-                        .impactType(PositionImpactType.ADJUST)
-                        .quantity(0)
-                        .unitPrice(MonetaryValue.zero())
-                        .fee(MonetaryValue.zero())
-                        .factor(BigDecimal.valueOf(2))
-                        .eventDate(LocalDate.of(2024, 2, 10))
-                        .createdAt(LocalDateTime.of(2024, 2, 10, 10, 0))
-                        .sourceType("CORPORATE_ACTION")
-                        .brokerName("XP")
-                        .brokerDocument("123")
-                        .build()
-        );
-
-        when(brokerRegistryRepository.findByBrokerKey("123")).thenReturn(Optional.empty());
-        when(impactQueryPort.findByTickerAndAssetTypeAndBrokerAliases("ITSA4", AssetType.STOCKS_BRL, List.of("123"), List.of("XP")))
-                .thenReturn(replaySet);
-        when(brokerRegistryRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        when(positionRepository.findByAssetNameAndAssetTypeAndBrokerKey("ITSA4", AssetType.STOCKS_BRL, "123")).thenReturn(Optional.empty());
-        when(positionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-
-        var first = service.calculatePosition("ITSA4", AssetType.STOCKS_BRL, "XP", "123");
-        var second = service.calculatePosition("ITSA4", AssetType.STOCKS_BRL, "XP", "123");
-
-        assertThat(first.getQuantity()).isEqualTo(200);
-        assertThat(second.getQuantity()).isEqualTo(200);
-        assertThat(first.getAveragePrice().toString()).isEqualTo(second.getAveragePrice().toString());
-        verify(historyRepository, times(2)).deleteByAssetNameAndBrokerKey("ITSA4", "123");
-    }
-
-    @Test
-    void shouldApplySplitAdjustmentWhenAdjustmentTypeIsSplit() {
-        PositionImpactQueryPort impactQueryPort = mock(PositionImpactQueryPort.class);
-        AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
-        AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
-        BrokerRegistryRepositoryPort brokerRegistryRepository = mock(BrokerRegistryRepositoryPort.class);
-
-        AssetPositionService service = new AssetPositionService(
-                impactQueryPort,
-                positionRepository,
-                historyRepository,
-                brokerRegistryRepository);
-
-        List<PositionImpactData> replaySet = List.of(
-                impact("e1", PositionImpactType.INCREASE, 100, "10", "0",
-                        LocalDate.of(2024, 1, 10), "XP", "123", 1),
+                impact("e1", "ITSA4", PositionImpactType.INCREASE, 100, "10", "0", LocalDate.of(2024, 1, 10), 1),
                 PositionImpactData.builder()
                         .originalEventId("split")
                         .sequence(2)
-                        .ticker("PETR4")
+                        .ticker("ITSA4")
                         .assetType(AssetType.STOCKS_BRL)
                         .impactType(PositionImpactType.ADJUST)
                         .adjustmentType(PositionAdjustmentType.SPLIT)
@@ -189,60 +73,35 @@ class AssetPositionServiceTest {
                         .eventDate(LocalDate.of(2024, 2, 10))
                         .createdAt(LocalDateTime.of(2024, 2, 10, 10, 0))
                         .sourceType("CORPORATE_ACTION")
-                        .brokerName("XP")
-                        .brokerDocument("123")
+                        .brokerKey("BROKER_XP")
                         .build()
         );
 
-        when(brokerRegistryRepository.findByBrokerKey("123")).thenReturn(Optional.empty());
-        when(impactQueryPort.findByTickerAndAssetTypeAndBrokerAliases("PETR4", AssetType.STOCKS_BRL, List.of("123"), List.of("XP")))
+        when(impactQueryPort.findByTickerAndAssetTypeAndBrokerKey("ITSA4", AssetType.STOCKS_BRL, "BROKER_XP"))
                 .thenReturn(replaySet);
-        when(brokerRegistryRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        when(positionRepository.findByAssetNameAndAssetTypeAndBrokerKey("PETR4", AssetType.STOCKS_BRL, "123")).thenReturn(Optional.empty());
+        when(positionRepository.findByAssetNameAndAssetTypeAndBrokerKey("ITSA4", AssetType.STOCKS_BRL, "BROKER_XP"))
+                .thenReturn(Optional.empty());
         when(positionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        var position = service.calculatePosition("PETR4", AssetType.STOCKS_BRL, "XP", "123");
+        var first = service.calculatePosition("ITSA4", AssetType.STOCKS_BRL, "BROKER_XP");
+        var second = service.calculatePosition("ITSA4", AssetType.STOCKS_BRL, "BROKER_XP");
 
-        assertThat(position.getQuantity()).isEqualTo(200);
-        assertThat(position.getAveragePrice().toString()).isEqualTo("5.00");
-    }
-
-    @Test
-    void shouldReturnNullWhenNoImpactExists() {
-        PositionImpactQueryPort impactQueryPort = mock(PositionImpactQueryPort.class);
-        AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
-        AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
-        BrokerRegistryRepositoryPort brokerRegistryRepository = mock(BrokerRegistryRepositoryPort.class);
-
-        AssetPositionService service = new AssetPositionService(
-                impactQueryPort,
-                positionRepository,
-                historyRepository,
-                brokerRegistryRepository);
-
-        when(brokerRegistryRepository.findByBrokerKey("123")).thenReturn(Optional.empty());
-        when(impactQueryPort.findByTickerAndAssetTypeAndBrokerAliases("ABEV3", AssetType.STOCKS_BRL, List.of("123"), List.of("XP")))
-                .thenReturn(List.of());
-
-        var result = service.calculatePosition("ABEV3", AssetType.STOCKS_BRL, "XP", "123");
-
-        assertThat(result).isNull();
-        verifyNoInteractions(positionRepository);
+        assertThat(first.getQuantity()).isEqualTo(200);
+        assertThat(second.getQuantity()).isEqualTo(200);
     }
 
     private PositionImpactData impact(String id,
+                                      String ticker,
                                       PositionImpactType type,
                                       int quantity,
                                       String unitPrice,
                                       String fee,
                                       LocalDate eventDate,
-                                      String brokerName,
-                                      String brokerDocument,
                                       int sequence) {
         return PositionImpactData.builder()
                 .originalEventId(id)
                 .sequence(sequence)
-                .ticker("PETR4")
+                .ticker(ticker)
                 .assetType(AssetType.STOCKS_BRL)
                 .impactType(type)
                 .quantity(quantity)
@@ -251,8 +110,7 @@ class AssetPositionServiceTest {
                 .eventDate(eventDate)
                 .createdAt(LocalDateTime.of(2024, 1, 1, 10, 0))
                 .sourceType("TRADING_NOTE")
-                .brokerName(brokerName)
-                .brokerDocument(brokerDocument)
+                .brokerKey("BROKER_XP")
                 .sourceReferenceId(id + ":" + sequence)
                 .build();
     }

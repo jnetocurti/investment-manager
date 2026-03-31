@@ -24,9 +24,8 @@ class PortfolioEventDocumentMapper {
         doc.setFee(event.getFee().toDisplayValue());
         doc.setCurrency(event.getCurrency());
         doc.setEventDate(event.getEventDate());
-        doc.setBrokerName(event.getBrokerName());
-        doc.setBrokerDocument(event.getBrokerDocument());
         doc.setBrokerKey(event.getBrokerKey());
+        doc.setIdempotencyKey(event.getIdempotencyKey());
         doc.setSourceReferenceId(event.getSourceReferenceId());
         doc.setMetadata(toMetadataDocument(event.getMetadata()));
         doc.setCreatedAt(event.getCreatedAt());
@@ -46,9 +45,8 @@ class PortfolioEventDocumentMapper {
                 .fee(MonetaryValue.of(doc.getFee()))
                 .currency(doc.getCurrency())
                 .eventDate(doc.getEventDate())
-                .brokerName(doc.getBrokerName())
-                .brokerDocument(doc.getBrokerDocument())
                 .brokerKey(doc.getBrokerKey())
+                .idempotencyKey(doc.getIdempotencyKey())
                 .sourceReferenceId(doc.getSourceReferenceId())
                 .metadata(toMetadata(doc.getMetadata()))
                 .createdAt(doc.getCreatedAt())
