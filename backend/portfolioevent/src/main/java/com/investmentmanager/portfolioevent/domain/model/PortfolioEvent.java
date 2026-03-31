@@ -1,7 +1,6 @@
 package com.investmentmanager.portfolioevent.domain.model;
 
 import com.investmentmanager.commons.domain.model.AssetType;
-import com.investmentmanager.commons.domain.model.BrokerIdentityResolver;
 import com.investmentmanager.commons.domain.model.MonetaryValue;
 import com.investmentmanager.commons.domain.model.OperationType;
 import lombok.Builder;
@@ -11,14 +10,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-/**
- * Aggregate root — registro factual de um evento de portfólio.
- *
- * <p>Armazena "o que aconteceu, quando, quanto e de onde veio" sem interpretar
- * impacto na posição. Todos os valores monetários são positivos (absolutos),
- * exatamente como aparecem na nota de corretagem. O módulo {@code asset}
- * downstream é quem interpreta o {@code eventType} para decidir o efeito.</p>
- */
 @Getter
 @Builder(toBuilder = true)
 public class PortfolioEvent {
@@ -34,21 +25,14 @@ public class PortfolioEvent {
     private final MonetaryValue fee;
     private final String currency;
     private final LocalDate eventDate;
-    private final String brokerName;
-    private final String brokerDocument;
     private final String brokerKey;
     private final String sourceReferenceId;
+    private final String idempotencyKey;
     private final PortfolioEventMetadata metadata;
     private final LocalDateTime createdAt;
 
-    /**
-     * Factory method para criar um evento a partir de uma operação de nota de negociação.
-     * Mapeia {@code OperationType} → {@code EventType} e registra os valores como recebidos
-     * (positivos, absolutos).
-     */
     public static PortfolioEvent fromOperation(String sourceReferenceId,
-                                               String brokerName,
-                                               String brokerDocument,
+                                               String brokerKey,
                                                LocalDate eventDate,
                                                String assetName,
                                                AssetType assetType,
@@ -58,9 +42,38 @@ public class PortfolioEvent {
                                                BigDecimal totalValue,
                                                BigDecimal fee,
                                                String currency) {
+        return create(
+                EventType.valueOf(operationType.name()),
+                EventSource.TRADING_NOTE,
+                assetName,
+                assetType,
+                quantity,
+                unitPrice,
+                totalValue,
+                fee,
+                currency,
+                eventDate,
+                brokerKey,
+                sourceReferenceId,
+                null);
+    }
+
+    public static PortfolioEvent create(EventType eventType,
+                                        EventSource eventSource,
+                                        String assetName,
+                                        AssetType assetType,
+                                        int quantity,
+                                        BigDecimal unitPrice,
+                                        BigDecimal totalValue,
+                                        BigDecimal fee,
+                                        String currency,
+                                        LocalDate eventDate,
+                                        String brokerKey,
+                                        String sourceReferenceId,
+                                        PortfolioEventMetadata metadata) {
         PortfolioEvent event = PortfolioEvent.builder()
-                .eventType(EventType.valueOf(operationType.name()))
-                .eventSource(EventSource.TRADING_NOTE)
+                .eventType(eventType)
+                .eventSource(eventSource)
                 .assetName(assetName)
                 .assetType(assetType)
                 .quantity(quantity)
@@ -69,10 +82,16 @@ public class PortfolioEvent {
                 .fee(MonetaryValue.of(fee))
                 .currency(currency != null ? currency : "BRL")
                 .eventDate(eventDate)
-                .brokerName(brokerName)
-                .brokerDocument(brokerDocument)
-                .brokerKey(BrokerIdentityResolver.resolve(brokerName, brokerDocument).getBrokerKey())
+                .brokerKey(brokerKey)
                 .sourceReferenceId(sourceReferenceId)
+                .idempotencyKey(PortfolioEventIdempotencyKey.of(
+                        eventType,
+                        assetName,
+                        assetType,
+                        eventDate,
+                        brokerKey,
+                        sourceReferenceId).value())
+                .metadata(metadata)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -91,7 +110,11 @@ public class PortfolioEvent {
             throw new IllegalArgumentException("Quantity must be > 0");
         if (eventDate == null)
             throw new IllegalArgumentException("Event date is required");
+        if (brokerKey == null || brokerKey.isBlank())
+            throw new IllegalArgumentException("Broker key is required");
         if (sourceReferenceId == null || sourceReferenceId.isBlank())
             throw new IllegalArgumentException("Source reference ID is required");
+        if (idempotencyKey == null || idempotencyKey.isBlank())
+            throw new IllegalArgumentException("Idempotency key is required");
     }
 }

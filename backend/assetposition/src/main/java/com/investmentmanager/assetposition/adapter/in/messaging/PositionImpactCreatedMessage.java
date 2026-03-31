@@ -22,8 +22,7 @@ public class PositionImpactCreatedMessage {
     private String originType;
     private String sourceType;
     private BigDecimal factor;
-    private String brokerName;
-    private String brokerDocument;
+    private String brokerKey;
     private String sourceReferenceId;
     private int schemaVersion;
 }

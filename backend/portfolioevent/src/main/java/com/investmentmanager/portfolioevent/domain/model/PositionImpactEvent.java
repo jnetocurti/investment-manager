@@ -11,10 +11,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-/**
- * Evento derivado de impacto de posição.
- * Representa somente o efeito na posição, separado da intenção de domínio.
- */
 @Getter
 @Builder(toBuilder = true)
 public class PositionImpactEvent {
@@ -33,8 +29,7 @@ public class PositionImpactEvent {
     private final LocalDate eventDate;
     private final EventType originType;
     private final ImpactSourceType sourceType;
-    private final String brokerName;
-    private final String brokerDocument;
+    private final String brokerKey;
     private final String sourceReferenceId;
     @Builder.Default
     private final int schemaVersion = 1;
@@ -64,6 +59,9 @@ public class PositionImpactEvent {
         }
         if (sourceType == null) {
             throw new IllegalArgumentException("Source type is required");
+        }
+        if (brokerKey == null || brokerKey.isBlank()) {
+            throw new IllegalArgumentException("Broker key is required");
         }
         if (factor != null && factor.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Factor must be > 0 when provided");

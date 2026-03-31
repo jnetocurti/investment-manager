@@ -30,8 +30,8 @@ public class BuyEventImpactTranslator implements PortfolioEventImpactTranslator 
                 .eventDate(event.getEventDate())
                 .originType(event.getEventType())
                 .sourceType(ImpactSourceType.TRADING_NOTE)
-                .brokerName(event.getBrokerName())
-                .brokerDocument(event.getBrokerDocument())
+                .brokerKey(event.getBrokerKey())
+                
                 .sourceReferenceId(event.getSourceReferenceId())
                 .schemaVersion(1)
                 .createdAt(LocalDateTime.now())

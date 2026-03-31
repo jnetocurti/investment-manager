@@ -20,20 +20,17 @@ class PositionImpactQueryAdapter implements PositionImpactQueryPort {
     private final PositionImpactEventMongoRepository repository;
 
     @Override
-    public List<PositionImpactData> findByTickerAndAssetTypeAndBrokerAliases(
+    public List<PositionImpactData> findByTickerAndAssetTypeAndBrokerKey(
             String ticker,
             AssetType assetType,
-            List<String> brokerDocuments,
-            List<String> brokerNames) {
+            String brokerKey) {
         List<PositionImpactEventDocument> docs =
-                repository.findByTickerAndAssetTypeAndBrokerAliases(
+                repository.findByTickerAndAssetTypeAndBrokerKeyOrderByEventDateAscSequenceAsc(
                         ticker,
                         assetType != null ? assetType.name() : null,
-                        brokerDocuments,
-                        brokerNames);
+                        brokerKey);
 
-        return docs
-                .stream()
+        return docs.stream()
                 .map(doc -> PositionImpactData.builder()
                         .id(doc.getId())
                         .originalEventId(doc.getOriginalEventId())
@@ -51,11 +48,9 @@ class PositionImpactQueryAdapter implements PositionImpactQueryPort {
                         .eventDate(doc.getEventDate())
                         .originType(doc.getOriginType())
                         .sourceType(doc.getSourceType())
-                        .brokerName(doc.getBrokerName())
-                        .brokerDocument(doc.getBrokerDocument())
+                        .brokerKey(doc.getBrokerKey())
                         .sourceReferenceId(doc.getSourceReferenceId())
-                        .schemaVersion(doc.getSchemaVersion() != null ? doc.getSchemaVersion() :
-                                (doc.getVersion() != null ? doc.getVersion() : 1))
+                        .schemaVersion(doc.getSchemaVersion() != null ? doc.getSchemaVersion() : 1)
                         .createdAt(doc.getCreatedAt())
                         .build())
                 .toList();

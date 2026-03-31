@@ -1,9 +1,11 @@
 package com.investmentmanager.portfolioevent.adapter.config;
 
 import com.investmentmanager.portfolioevent.domain.port.out.AssetDetailResolverPort;
+import com.investmentmanager.portfolioevent.domain.port.out.BrokerCatalogRepositoryPort;
 import com.investmentmanager.portfolioevent.domain.port.out.PortfolioEventRepositoryPort;
 import com.investmentmanager.portfolioevent.domain.port.out.PositionImpactEventPublisherPort;
 import com.investmentmanager.portfolioevent.domain.port.out.PositionImpactEventRepositoryPort;
+import com.investmentmanager.portfolioevent.domain.service.CanonicalBrokerResolver;
 import com.investmentmanager.portfolioevent.domain.service.PortfolioEventService;
 import com.investmentmanager.portfolioevent.domain.service.PositionImpactGenerationService;
 import com.investmentmanager.portfolioevent.domain.service.SubscriptionService;
@@ -20,6 +22,11 @@ import java.util.List;
 
 @Configuration
 public class PortfolioEventConfig {
+
+    @Bean
+    public CanonicalBrokerResolver canonicalBrokerResolver(BrokerCatalogRepositoryPort brokerCatalogRepositoryPort) {
+        return new CanonicalBrokerResolver(brokerCatalogRepositoryPort);
+    }
 
     @Bean
     public BuyEventImpactTranslator buyEventImpactTranslator() {
@@ -66,14 +73,16 @@ public class PortfolioEventConfig {
     public PortfolioEventService portfolioEventService(
             PortfolioEventRepositoryPort repository,
             AssetDetailResolverPort assetDetailResolver,
-            PositionImpactGenerationService impactGenerationService) {
-        return new PortfolioEventService(repository, assetDetailResolver, impactGenerationService);
+            PositionImpactGenerationService impactGenerationService,
+            CanonicalBrokerResolver canonicalBrokerResolver) {
+        return new PortfolioEventService(repository, assetDetailResolver, impactGenerationService, canonicalBrokerResolver);
     }
 
     @Bean
     public SubscriptionService subscriptionService(
             PortfolioEventRepositoryPort repository,
-            PositionImpactGenerationService impactGenerationService) {
-        return new SubscriptionService(repository, impactGenerationService);
+            PositionImpactGenerationService impactGenerationService,
+            CanonicalBrokerResolver canonicalBrokerResolver) {
+        return new SubscriptionService(repository, impactGenerationService, canonicalBrokerResolver);
     }
 }

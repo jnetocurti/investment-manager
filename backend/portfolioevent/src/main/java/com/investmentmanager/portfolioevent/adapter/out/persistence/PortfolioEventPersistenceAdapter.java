@@ -1,13 +1,10 @@
 package com.investmentmanager.portfolioevent.adapter.out.persistence;
 
-import com.investmentmanager.commons.domain.model.AssetType;
 import com.investmentmanager.portfolioevent.domain.model.PortfolioEvent;
 import com.investmentmanager.portfolioevent.domain.port.out.PortfolioEventRepositoryPort;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,39 +20,14 @@ class PortfolioEventPersistenceAdapter implements PortfolioEventRepositoryPort {
                 .map(PortfolioEventDocumentMapper::toDocument)
                 .toList();
 
-        try {
-            var saved = mongoRepository.saveAll(documents);
-
-            return saved.stream()
-                    .map(PortfolioEventDocumentMapper::toDomain)
-                    .toList();
-        } catch (DuplicateKeyException e) {
-            boolean hasSubscription = portfolioEvents.stream()
-                    .anyMatch(event -> "SUBSCRIPTION".equals(event.getEventType().name()));
-            if (hasSubscription) {
-                throw new IllegalStateException("Subscrição duplicada para a mesma posição e data", e);
-            }
-            throw e;
-        }
+        return mongoRepository.saveAll(documents).stream()
+                .map(PortfolioEventDocumentMapper::toDomain)
+                .toList();
     }
 
     @Override
-    public boolean existsBySourceReferenceId(String sourceReferenceId) {
-        return mongoRepository.existsBySourceReferenceId(sourceReferenceId);
-    }
-
-    @Override
-    public boolean existsSubscriptionByBusinessKey(
-            String assetName,
-            AssetType assetType,
-            String brokerKey,
-            LocalDate eventDate) {
-        return mongoRepository.existsByEventTypeAndAssetNameAndAssetTypeAndBrokerKeyAndEventDate(
-                "SUBSCRIPTION",
-                assetName,
-                assetType != null ? assetType.name() : null,
-                brokerKey,
-                eventDate);
+    public boolean existsByIdempotencyKey(String idempotencyKey) {
+        return mongoRepository.existsByIdempotencyKey(idempotencyKey);
     }
 
     @Override

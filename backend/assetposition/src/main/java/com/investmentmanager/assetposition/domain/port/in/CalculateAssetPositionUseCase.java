@@ -5,5 +5,5 @@ import com.investmentmanager.commons.domain.model.AssetType;
 
 public interface CalculateAssetPositionUseCase {
 
-    AssetPosition calculatePosition(String assetName, AssetType assetType, String brokerName, String brokerDocument);
+    AssetPosition calculatePosition(String assetName, AssetType assetType, String brokerKey);
 }
