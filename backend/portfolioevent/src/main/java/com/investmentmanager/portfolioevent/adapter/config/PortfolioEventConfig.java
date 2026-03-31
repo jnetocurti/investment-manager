@@ -13,8 +13,10 @@ import com.investmentmanager.portfolioevent.domain.service.impact.BuyEventImpact
 import com.investmentmanager.portfolioevent.domain.service.impact.PortfolioEventImpactTranslator;
 import com.investmentmanager.portfolioevent.domain.service.impact.PositionImpactTranslatorRegistry;
 import com.investmentmanager.portfolioevent.domain.service.impact.SellEventImpactTranslator;
+import com.investmentmanager.portfolioevent.domain.service.impact.SplitImpactTranslator;
 import com.investmentmanager.portfolioevent.domain.service.impact.SubscriptionConversionImpactTranslator;
 import com.investmentmanager.portfolioevent.domain.service.impact.SubscriptionPendingImpactTranslator;
+import com.investmentmanager.portfolioevent.domain.service.SplitService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -49,16 +51,23 @@ public class PortfolioEventConfig {
     }
 
     @Bean
+    public SplitImpactTranslator splitImpactTranslator() {
+        return new SplitImpactTranslator();
+    }
+
+    @Bean
     public PositionImpactTranslatorRegistry positionImpactTranslatorRegistry(
             BuyEventImpactTranslator buyTranslator,
             SellEventImpactTranslator sellTranslator,
             SubscriptionPendingImpactTranslator pendingTranslator,
-            SubscriptionConversionImpactTranslator conversionTranslator) {
+            SubscriptionConversionImpactTranslator conversionTranslator,
+            SplitImpactTranslator splitImpactTranslator) {
         return new PositionImpactTranslatorRegistry(List.<PortfolioEventImpactTranslator>of(
                 buyTranslator,
                 sellTranslator,
                 pendingTranslator,
-                conversionTranslator));
+                conversionTranslator,
+                splitImpactTranslator));
     }
 
     @Bean
@@ -84,5 +93,13 @@ public class PortfolioEventConfig {
             PositionImpactGenerationService impactGenerationService,
             CanonicalBrokerResolver canonicalBrokerResolver) {
         return new SubscriptionService(repository, impactGenerationService, canonicalBrokerResolver);
+    }
+
+    @Bean
+    public SplitService splitService(
+            PortfolioEventRepositoryPort repository,
+            PositionImpactGenerationService impactGenerationService,
+            CanonicalBrokerResolver canonicalBrokerResolver) {
+        return new SplitService(repository, impactGenerationService, canonicalBrokerResolver);
     }
 }

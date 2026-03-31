@@ -59,6 +59,7 @@ class PortfolioEventDocumentMapper {
         }
         var metadataDocument = new PortfolioEventDocument.MetadataDocument();
         metadataDocument.setSubscriptionTicker(metadata.getSubscriptionTicker());
+        metadataDocument.setSplitRatio(metadata.getSplitRatio());
         return metadataDocument;
     }
 
@@ -68,6 +69,7 @@ class PortfolioEventDocumentMapper {
         }
         return PortfolioEventMetadata.builder()
                 .subscriptionTicker(metadataDocument.getSubscriptionTicker())
+                .splitRatio(metadataDocument.getSplitRatio())
                 .build();
     }
 }

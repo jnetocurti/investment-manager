@@ -1,0 +1,20 @@
+[
+  {
+    "targetTicker": "ITSA4",
+    "targetAssetType": "STOCKS_BRL",
+    "ratio": "1:2",
+    "eventDate": "2024-08-10",
+    "brokerName": "NUINVEST",
+    "brokerDocument": "62.169.875/0001-79",
+    "currency": "BRL"
+  },
+  {
+    "targetTicker": "ABCB4",
+    "targetAssetType": "STOCKS_BRL",
+    "ratio": "10:1",
+    "eventDate": "2024-09-15",
+    "brokerName": "NUINVEST",
+    "brokerDocument": "62.169.875/0001-79",
+    "currency": "BRL"
+  }
+]

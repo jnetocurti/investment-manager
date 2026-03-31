@@ -44,5 +44,6 @@ public class PortfolioEventDocument {
     @Data
     public static class MetadataDocument {
         private String subscriptionTicker;
+        private String splitRatio;
     }
 }
