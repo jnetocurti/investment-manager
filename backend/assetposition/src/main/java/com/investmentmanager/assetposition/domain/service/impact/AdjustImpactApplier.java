@@ -6,6 +6,7 @@ import com.investmentmanager.commons.domain.model.PositionAdjustmentType;
 import com.investmentmanager.commons.domain.model.PositionImpactType;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 public class AdjustImpactApplier implements PositionImpactApplier {
 
@@ -30,7 +31,12 @@ public class AdjustImpactApplier implements PositionImpactApplier {
 
     private PositionApplyResult applySplit(PositionState current, PositionImpactData impact) {
         BigDecimal factor = impact.getFactor();
-        int quantity = BigDecimal.valueOf(current.getQuantity()).multiply(factor).intValue();
+        BigDecimal splitQuantity = BigDecimal.valueOf(current.getQuantity()).multiply(factor);
+        if (splitQuantity.stripTrailingZeros().scale() > 0) {
+            throw new IllegalArgumentException("Split gera fração de quantidade; operação não suportada");
+        }
+
+        int quantity = splitQuantity.setScale(0, RoundingMode.UNNECESSARY).intValueExact();
         MonetaryValue averagePrice = current.getAveragePrice().divide(factor);
         MonetaryValue totalCost = averagePrice.multiply(quantity).add(impact.getFee());
 
