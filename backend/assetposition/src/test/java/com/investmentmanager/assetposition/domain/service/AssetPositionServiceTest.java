@@ -5,6 +5,7 @@ import com.investmentmanager.assetposition.domain.port.out.AssetPositionHistoryR
 import com.investmentmanager.assetposition.domain.port.out.AssetPositionRepositoryPort;
 import com.investmentmanager.assetposition.domain.port.out.PositionImpactQueryPort;
 import com.investmentmanager.assetposition.domain.port.out.BrokerCatalogQueryPort;
+import com.investmentmanager.assetposition.domain.port.out.SplitFractionMetadataPort;
 import com.investmentmanager.commons.domain.model.AssetType;
 import com.investmentmanager.commons.domain.model.MonetaryValue;
 import com.investmentmanager.commons.domain.model.PositionAdjustmentType;
@@ -189,11 +190,18 @@ class AssetPositionServiceTest {
         PositionImpactQueryPort impactQueryPort = mock(PositionImpactQueryPort.class);
         AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
         AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
+        SplitFractionMetadataPort splitFractionMetadataPort = mock(SplitFractionMetadataPort.class);
 
         BrokerCatalogQueryPort brokerCatalogQueryPort = mock(BrokerCatalogQueryPort.class);
         when(brokerCatalogQueryPort.findByBrokerKey("BROKER_XP")).thenReturn(java.util.Optional.of(new BrokerCatalogQueryPort.BrokerDisplayData("XP", "12")));
 
-        AssetPositionService service = new AssetPositionService(impactQueryPort, positionRepository, historyRepository, brokerCatalogQueryPort);
+        AssetPositionService service = new AssetPositionService(
+                impactQueryPort,
+                positionRepository,
+                historyRepository,
+                brokerCatalogQueryPort,
+                splitFractionMetadataPort,
+                com.investmentmanager.assetposition.domain.service.impact.PositionImpactApplierRegistry.defaultRegistry());
 
         List<PositionImpactData> replaySet = List.of(
                 impact("e1", "ITSA4", PositionImpactType.INCREASE, 3, "10", "0", LocalDate.of(2024, 1, 10), 1),
@@ -231,6 +239,11 @@ class AssetPositionServiceTest {
         MonetaryValue totalAfterSplit = position.getTotalCost();
         MonetaryValue residual = MonetaryValue.of("3.333334");
         assertThat(totalAfterSplit.add(residual).toBigDecimal()).isEqualByComparingTo(totalBeforeSplit.toBigDecimal());
+
+        verify(splitFractionMetadataPort).updateSplitFractionMetadata(
+                eq("split"),
+                eq(residual),
+                eq("SPLIT_FRACTION:split:2"));
     }
 
     private PositionImpactData impact(String id,

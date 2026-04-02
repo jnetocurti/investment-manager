@@ -8,6 +8,7 @@ import com.investmentmanager.assetposition.domain.port.out.AssetPositionHistoryR
 import com.investmentmanager.assetposition.domain.port.out.AssetPositionRepositoryPort;
 import com.investmentmanager.assetposition.domain.port.out.BrokerCatalogQueryPort;
 import com.investmentmanager.assetposition.domain.port.out.PositionImpactQueryPort;
+import com.investmentmanager.assetposition.domain.port.out.SplitFractionMetadataPort;
 import com.investmentmanager.assetposition.domain.service.impact.PositionApplyResult;
 import com.investmentmanager.assetposition.domain.service.impact.PositionImpactApplierRegistry;
 import com.investmentmanager.assetposition.domain.service.impact.PositionState;
@@ -29,6 +30,7 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
     private final AssetPositionRepositoryPort positionRepository;
     private final AssetPositionHistoryRepositoryPort historyRepository;
     private final BrokerCatalogQueryPort brokerCatalogQueryPort;
+    private final SplitFractionMetadataPort splitFractionMetadataPort;
     private final PositionImpactApplierRegistry impactApplierRegistry;
 
     public AssetPositionService(PositionImpactQueryPort impactQueryPort,
@@ -36,6 +38,8 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
                                 AssetPositionHistoryRepositoryPort historyRepository,
                                 BrokerCatalogQueryPort brokerCatalogQueryPort) {
         this(impactQueryPort, positionRepository, historyRepository, brokerCatalogQueryPort,
+                (splitEventId, splitFractionResidualBookValue, splitFractionSourceReferenceId) -> {
+                },
                 PositionImpactApplierRegistry.defaultRegistry());
     }
 
@@ -60,6 +64,12 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
         for (PositionImpactData impact : impacts) {
             PositionApplyResult result = impactApplierRegistry.apply(state, impact);
             state = result.getState();
+            if (result.hasSplitFractionResidualBookValue()) {
+                splitFractionMetadataPort.updateSplitFractionMetadata(
+                        impact.getOriginalEventId(),
+                        result.getSplitFractionResidualBookValue(),
+                        resolveSplitFractionSourceReferenceId(impact));
+            }
 
             AssetPositionSnapshot snapshot = AssetPositionSnapshot.builder()
                     .quantity(state.getQuantity())
@@ -77,6 +87,13 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
         AssetType resolvedAssetType = assetType != null ? assetType : impacts.getLast().getAssetType();
         return persistPosition(assetName, brokerKey, state.getQuantity(), state.getAveragePrice(), state.getTotalCost(),
                 resolvedAssetType, allSnapshots);
+    }
+
+    private String resolveSplitFractionSourceReferenceId(PositionImpactData impact) {
+        if (impact.getSourceReferenceId() != null && !impact.getSourceReferenceId().isBlank()) {
+            return impact.getSourceReferenceId();
+        }
+        return "SPLIT_FRACTION:%s:%s".formatted(impact.getOriginalEventId(), impact.getSequence());
     }
 
     private AssetPosition persistPosition(String assetName,
