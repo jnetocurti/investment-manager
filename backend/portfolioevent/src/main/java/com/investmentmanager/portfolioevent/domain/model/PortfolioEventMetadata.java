@@ -11,6 +11,8 @@ public class PortfolioEventMetadata {
 
     private final String subscriptionTicker;
     private final String splitRatio;
+    private final String oldTicker;
+    private final String newTicker;
     private final BigDecimal splitFractionResidualBookValue;
     private final String splitFractionFlowStatus;
     private final String splitFractionSourceReferenceId;
@@ -24,6 +26,13 @@ public class PortfolioEventMetadata {
     public static PortfolioEventMetadata split(String splitRatio) {
         return PortfolioEventMetadata.builder()
                 .splitRatio(splitRatio)
+                .build();
+    }
+
+    public static PortfolioEventMetadata tickerRename(String oldTicker, String newTicker) {
+        return PortfolioEventMetadata.builder()
+                .oldTicker(oldTicker)
+                .newTicker(newTicker)
                 .build();
     }
 }

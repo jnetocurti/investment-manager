@@ -1,14 +1,14 @@
 #!/bin/bash
 #
-# Carga completa: notas de negociação + subscrições + splits
+# Carga completa: notas de negociação + subscrições + splits + trocas de ticker
 #
 # Uso:
-#   ./scripts/load-data.sh <diretório-notas> [arquivo-subscricoes.json] [arquivo-splits.json]
+#   ./scripts/load-data.sh <diretório-notas> [arquivo-subscricoes.json] [arquivo-splits.json] [arquivo-ticker-renames.json]
 #
 # Exemplos:
 #   ./scripts/load-data.sh ~/notas_negociacao
 #   ./scripts/load-data.sh ~/notas_negociacao subscricoes.json
-#   ./scripts/load-data.sh ~/notas_negociacao subscricoes.json splits.json
+#   ./scripts/load-data.sh ~/notas_negociacao subscricoes.json splits.json ticker-renames.json
 #
 # O arquivo de subscrições é um JSON array:
 # [
@@ -39,9 +39,10 @@ DB_NAME="investmentmanager"
 NOTES_DIR="${1:-}"
 SUBSCRIPTIONS_FILE="${2:-}"
 SPLITS_FILE="${3:-}"
+TICKER_RENAMES_FILE="${4:-}"
 
 if [ -z "$NOTES_DIR" ]; then
-  echo "Uso: $0 <diretório-notas> [arquivo-subscricoes.json] [arquivo-splits.json]"
+  echo "Uso: $0 <diretório-notas> [arquivo-subscricoes.json] [arquivo-splits.json] [arquivo-ticker-renames.json]"
   exit 1
 fi
 
@@ -57,6 +58,11 @@ fi
 
 if [ -n "$SPLITS_FILE" ] && [ ! -f "$SPLITS_FILE" ]; then
   echo "Erro: arquivo de splits não encontrado: $SPLITS_FILE"
+  exit 1
+fi
+
+if [ -n "$TICKER_RENAMES_FILE" ] && [ ! -f "$TICKER_RENAMES_FILE" ]; then
+  echo "Erro: arquivo de trocas de ticker não encontrado: $TICKER_RENAMES_FILE"
   exit 1
 fi
 
@@ -220,13 +226,41 @@ with open('$SPLITS_FILE') as f:
   echo "Splits processados."
 fi
 
-# --- 7. Aguardar processamento assíncrono ---
+# --- 7. Trocas de ticker ---
+
+if [ -n "$TICKER_RENAMES_FILE" ]; then
+  echo ""
+  echo "=== Enviando trocas de ticker ==="
+
+  RENAME_COUNT=$(python3 -c "import json; print(len(json.load(open('$TICKER_RENAMES_FILE'))))" 2>/dev/null || echo "0")
+  echo "Encontradas $RENAME_COUNT trocas de ticker em $TICKER_RENAMES_FILE"
+
+  python3 -c "
+import json
+with open('$TICKER_RENAMES_FILE') as f:
+    for r in json.load(f):
+        print(json.dumps(r))
+" | while IFS= read -r rename_json; do
+    STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API_BASE/api/ticker-renames" \
+      -H "Content-Type: application/json" \
+      -d "$rename_json" 2>/dev/null)
+    if [ "$STATUS" != "200" ]; then
+      OLD_TICKER=$(echo "$rename_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('oldTicker','?'))" 2>/dev/null)
+      NEW_TICKER=$(echo "$rename_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('newTicker','?'))" 2>/dev/null)
+      echo "  FAIL ($STATUS): $OLD_TICKER -> $NEW_TICKER"
+    fi
+  done
+
+  echo "Trocas de ticker processadas."
+fi
+
+# --- 8. Aguardar processamento assíncrono ---
 
 echo ""
 echo "=== Aguardando processamento assíncrono ==="
 sleep 10
 
-# --- 8. Resultado ---
+# --- 9. Resultado ---
 
 echo ""
 echo "=== Resultado ==="

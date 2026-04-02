@@ -87,4 +87,36 @@ class PortfolioEventDocumentMapperTest {
         assertEquals("PENDING_SETTLEMENT", mapped.getMetadata().getSplitFractionFlowStatus());
         assertEquals("SPLIT:ITSA4:2026-03-30:1:2", mapped.getMetadata().getSplitFractionSourceReferenceId());
     }
+
+    @Test
+    void shouldMapTickerRenameMetadataToDocumentAndBack() {
+        PortfolioEvent event = PortfolioEvent.builder()
+                .id("evt-rename-1")
+                .eventType(EventType.TICKER_RENAME)
+                .eventSource(EventSource.CORPORATE_ACTION)
+                .assetName("GGRC11")
+                .assetType(AssetType.REAL_ESTATE_FUND_BRL)
+                .quantity(25)
+                .unitPrice(MonetaryValue.of("100"))
+                .totalValue(MonetaryValue.of("2500"))
+                .fee(MonetaryValue.zero())
+                .currency("BRL")
+                .eventDate(LocalDate.of(2026, 4, 1))
+                .brokerKey("BROKER_CLEAR")
+                .idempotencyKey("idempotency-rename-1")
+                .sourceReferenceId("TICKER_RENAME:GETT11:GGRC11:2026-04-01")
+                .metadata(PortfolioEventMetadata.tickerRename("GETT11", "GGRC11"))
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        PortfolioEventDocument doc = PortfolioEventDocumentMapper.toDocument(event);
+        assertNotNull(doc.getMetadata());
+        assertEquals("GETT11", doc.getMetadata().getOldTicker());
+        assertEquals("GGRC11", doc.getMetadata().getNewTicker());
+
+        PortfolioEvent mapped = PortfolioEventDocumentMapper.toDomain(doc);
+        assertNotNull(mapped.getMetadata());
+        assertEquals("GETT11", mapped.getMetadata().getOldTicker());
+        assertEquals("GGRC11", mapped.getMetadata().getNewTicker());
+    }
 }
