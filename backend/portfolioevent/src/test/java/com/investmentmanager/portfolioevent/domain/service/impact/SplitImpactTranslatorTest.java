@@ -36,7 +36,7 @@ class SplitImpactTranslatorTest {
                 .brokerKey("BROKER_XP")
                 .sourceReferenceId("SPLIT:ITSA4:2026-03-31:1:2")
                 .idempotencyKey("idemp")
-                .metadata(PortfolioEventMetadata.split("1:2", "SPLIT:ITSA4:2026-03-31:1:2"))
+                .metadata(PortfolioEventMetadata.split("1:2"))
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -65,7 +65,7 @@ class SplitImpactTranslatorTest {
                 .brokerKey("BROKER_XP")
                 .sourceReferenceId("SPLIT:ABCB4:2026-03-31:10:1")
                 .idempotencyKey("idemp2")
-                .metadata(PortfolioEventMetadata.split("10:1", "SPLIT:ABCB4:2026-03-31:10:1"))
+                .metadata(PortfolioEventMetadata.split("10:1"))
                 .createdAt(LocalDateTime.now())
                 .build();
 

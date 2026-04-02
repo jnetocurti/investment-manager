@@ -21,11 +21,9 @@ public class PortfolioEventMetadata {
                 .build();
     }
 
-    public static PortfolioEventMetadata split(String splitRatio, String splitFractionSourceReferenceId) {
+    public static PortfolioEventMetadata split(String splitRatio) {
         return PortfolioEventMetadata.builder()
                 .splitRatio(splitRatio)
-                .splitFractionFlowStatus("PENDING_SETTLEMENT")
-                .splitFractionSourceReferenceId(splitFractionSourceReferenceId)
                 .build();
     }
 }

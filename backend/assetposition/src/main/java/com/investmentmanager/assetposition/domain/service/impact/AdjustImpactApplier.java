@@ -45,14 +45,11 @@ public class AdjustImpactApplier implements PositionImpactApplier {
 
         validateSplitBookIdentity(current, impact, totalCost, splitFractionResidualBookValue);
 
-        return PositionApplyResult.builder()
-                .state(current.toBuilder()
-                        .quantity(quantity)
-                        .averagePrice(averagePrice)
-                        .totalCost(totalCost)
-                        .build())
-                .splitFractionResidualBookValue(splitFractionResidualBookValue)
-                .build();
+        return PositionApplyResult.of(current.toBuilder()
+                .quantity(quantity)
+                .averagePrice(averagePrice)
+                .totalCost(totalCost)
+                .build());
     }
 
     private void validateSplitBookIdentity(PositionState current,
