@@ -60,6 +60,9 @@ class PortfolioEventDocumentMapper {
         var metadataDocument = new PortfolioEventDocument.MetadataDocument();
         metadataDocument.setSubscriptionTicker(metadata.getSubscriptionTicker());
         metadataDocument.setSplitRatio(metadata.getSplitRatio());
+        metadataDocument.setSplitFractionResidualBookValue(metadata.getSplitFractionResidualBookValue());
+        metadataDocument.setSplitFractionFlowStatus(metadata.getSplitFractionFlowStatus());
+        metadataDocument.setSplitFractionSourceReferenceId(metadata.getSplitFractionSourceReferenceId());
         return metadataDocument;
     }
 
@@ -70,6 +73,9 @@ class PortfolioEventDocumentMapper {
         return PortfolioEventMetadata.builder()
                 .subscriptionTicker(metadataDocument.getSubscriptionTicker())
                 .splitRatio(metadataDocument.getSplitRatio())
+                .splitFractionResidualBookValue(metadataDocument.getSplitFractionResidualBookValue())
+                .splitFractionFlowStatus(metadataDocument.getSplitFractionFlowStatus())
+                .splitFractionSourceReferenceId(metadataDocument.getSplitFractionSourceReferenceId())
                 .build();
     }
 }

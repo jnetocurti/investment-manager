@@ -48,4 +48,43 @@ class PortfolioEventDocumentMapperTest {
         assertEquals("idempotency-1", mapped.getIdempotencyKey());
         assertEquals("PETR12", mapped.getMetadata().getSubscriptionTicker());
     }
+
+    @Test
+    void shouldMapSplitFractionMetadataToDocumentAndBack() {
+        PortfolioEvent event = PortfolioEvent.builder()
+                .id("evt-split-1")
+                .eventType(EventType.SPLIT)
+                .eventSource(EventSource.CORPORATE_ACTION)
+                .assetName("ITSA4")
+                .assetType(AssetType.STOCKS_BRL)
+                .quantity(1)
+                .unitPrice(MonetaryValue.zero())
+                .totalValue(MonetaryValue.zero())
+                .fee(MonetaryValue.zero())
+                .currency("BRL")
+                .eventDate(LocalDate.of(2026, 3, 30))
+                .brokerKey("BROKER_CLEAR")
+                .idempotencyKey("idempotency-split-1")
+                .sourceReferenceId("SPLIT:ITSA4:2026-03-30:1:2")
+                .metadata(PortfolioEventMetadata.builder()
+                        .splitRatio("1:2")
+                        .splitFractionResidualBookValue(new java.math.BigDecimal("3.33"))
+                        .splitFractionFlowStatus("PENDING_SETTLEMENT")
+                        .splitFractionSourceReferenceId("SPLIT:ITSA4:2026-03-30:1:2")
+                        .build())
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        PortfolioEventDocument doc = PortfolioEventDocumentMapper.toDocument(event);
+        assertNotNull(doc.getMetadata());
+        assertEquals("3.33", doc.getMetadata().getSplitFractionResidualBookValue().toPlainString());
+        assertEquals("PENDING_SETTLEMENT", doc.getMetadata().getSplitFractionFlowStatus());
+        assertEquals("SPLIT:ITSA4:2026-03-30:1:2", doc.getMetadata().getSplitFractionSourceReferenceId());
+
+        PortfolioEvent mapped = PortfolioEventDocumentMapper.toDomain(doc);
+        assertNotNull(mapped.getMetadata());
+        assertEquals("3.33", mapped.getMetadata().getSplitFractionResidualBookValue().toPlainString());
+        assertEquals("PENDING_SETTLEMENT", mapped.getMetadata().getSplitFractionFlowStatus());
+        assertEquals("SPLIT:ITSA4:2026-03-30:1:2", mapped.getMetadata().getSplitFractionSourceReferenceId());
+    }
 }
