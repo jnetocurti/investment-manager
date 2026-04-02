@@ -141,6 +141,50 @@ class AssetPositionServiceTest {
     }
 
     @Test
+    void shouldNotUndercountReverseSplitWhenFactorIsDecimalApproximation() {
+        PositionImpactQueryPort impactQueryPort = mock(PositionImpactQueryPort.class);
+        AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
+        AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
+
+        BrokerCatalogQueryPort brokerCatalogQueryPort = mock(BrokerCatalogQueryPort.class);
+        when(brokerCatalogQueryPort.findByBrokerKey("BROKER_XP")).thenReturn(java.util.Optional.of(new BrokerCatalogQueryPort.BrokerDisplayData("XP", "12")));
+
+        AssetPositionService service = new AssetPositionService(impactQueryPort, positionRepository, historyRepository, brokerCatalogQueryPort);
+
+        List<PositionImpactData> replaySet = List.of(
+                impact("e1", "ITSA4", PositionImpactType.INCREASE, 3, "10", "0", LocalDate.of(2024, 1, 10), 1),
+                PositionImpactData.builder()
+                        .originalEventId("reverse-split-3-1")
+                        .sequence(2)
+                        .ticker("ITSA4")
+                        .assetType(AssetType.STOCKS_BRL)
+                        .impactType(PositionImpactType.ADJUST)
+                        .adjustmentType(PositionAdjustmentType.REVERSE_SPLIT)
+                        .quantity(0)
+                        .unitPrice(MonetaryValue.zero())
+                        .fee(MonetaryValue.zero())
+                        .factor(new BigDecimal("0.3333333333333333"))
+                        .eventDate(LocalDate.of(2024, 2, 10))
+                        .createdAt(LocalDateTime.of(2024, 2, 10, 10, 0))
+                        .sourceType("CORPORATE_ACTION")
+                        .brokerKey("BROKER_XP")
+                        .build()
+        );
+
+        when(impactQueryPort.findByTickerAndAssetTypeAndBrokerKey("ITSA4", AssetType.STOCKS_BRL, "BROKER_XP"))
+                .thenReturn(replaySet);
+        when(positionRepository.findByAssetNameAndAssetTypeAndBrokerKey("ITSA4", AssetType.STOCKS_BRL, "BROKER_XP"))
+                .thenReturn(Optional.empty());
+        when(positionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var position = service.calculatePosition("ITSA4", AssetType.STOCKS_BRL, "BROKER_XP");
+
+        assertThat(position.getQuantity()).isEqualTo(1);
+        assertThat(position.getTotalCost().toBigDecimal()).isEqualByComparingTo("30.000000");
+        assertThat(position.getAveragePrice().toBigDecimal()).isEqualByComparingTo("30.000000");
+    }
+
+    @Test
     void shouldApplySplitThatGeneratesFractionAndPreserveBookIdentity() {
         PositionImpactQueryPort impactQueryPort = mock(PositionImpactQueryPort.class);
         AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);

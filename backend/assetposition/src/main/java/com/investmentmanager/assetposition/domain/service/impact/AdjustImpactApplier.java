@@ -10,6 +10,8 @@ import java.math.RoundingMode;
 
 public class AdjustImpactApplier implements PositionImpactApplier {
 
+    private static final BigDecimal SPLIT_INTEGER_EPSILON = new BigDecimal("0.000000000001");
+
     @Override
     public boolean supports(PositionImpactData impact) {
         return impact.getImpactType() == PositionImpactType.ADJUST;
@@ -31,7 +33,8 @@ public class AdjustImpactApplier implements PositionImpactApplier {
 
     private PositionApplyResult applySplit(PositionState current, PositionImpactData impact) {
         BigDecimal factor = impact.getFactor();
-        BigDecimal splitQuantity = BigDecimal.valueOf(current.getQuantity()).multiply(factor);
+        BigDecimal rawSplitQuantity = BigDecimal.valueOf(current.getQuantity()).multiply(factor);
+        BigDecimal splitQuantity = normalizeNearInteger(rawSplitQuantity);
         int quantity = splitQuantity.setScale(0, RoundingMode.DOWN).intValueExact();
         BigDecimal splitFractionQuantity = splitQuantity.subtract(BigDecimal.valueOf(quantity));
         MonetaryValue theoreticalPostSplitPrice = current.getAveragePrice().divide(factor);
@@ -50,6 +53,14 @@ public class AdjustImpactApplier implements PositionImpactApplier {
                 .averagePrice(averagePrice)
                 .totalCost(totalCost)
                 .build());
+    }
+
+    private BigDecimal normalizeNearInteger(BigDecimal quantity) {
+        BigDecimal nearestInteger = quantity.setScale(0, RoundingMode.HALF_UP);
+        BigDecimal distanceToNearestInteger = quantity.subtract(nearestInteger).abs();
+        return distanceToNearestInteger.compareTo(SPLIT_INTEGER_EPSILON) <= 0
+                ? nearestInteger
+                : quantity;
     }
 
     private void validateSplitBookIdentity(PositionState current,
