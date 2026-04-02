@@ -53,6 +53,8 @@ class SplitServiceTest {
         assertEquals("split-1", result.getId());
         assertEquals(EventType.SPLIT, result.getEventType());
         assertEquals("1:10", result.getMetadata().getSplitRatio());
+        assertEquals("PENDING_SETTLEMENT", result.getMetadata().getSplitFractionFlowStatus());
+        assertEquals("SPLIT:PETR4:2026-03-31:1:10", result.getMetadata().getSplitFractionSourceReferenceId());
         assertEquals(BigDecimal.ZERO, result.getUnitPrice().toDisplayValue());
     }
 

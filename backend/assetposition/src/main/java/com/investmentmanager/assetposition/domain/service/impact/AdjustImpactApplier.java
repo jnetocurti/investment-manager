@@ -32,19 +32,38 @@ public class AdjustImpactApplier implements PositionImpactApplier {
     private PositionApplyResult applySplit(PositionState current, PositionImpactData impact) {
         BigDecimal factor = impact.getFactor();
         BigDecimal splitQuantity = BigDecimal.valueOf(current.getQuantity()).multiply(factor);
-        if (splitQuantity.stripTrailingZeros().scale() > 0) {
-            throw new IllegalArgumentException("Split gera fração de quantidade; operação não suportada");
+        int quantity = splitQuantity.setScale(0, RoundingMode.DOWN).intValueExact();
+        BigDecimal splitFractionQuantity = splitQuantity.subtract(BigDecimal.valueOf(quantity));
+        MonetaryValue theoreticalPostSplitPrice = current.getAveragePrice().divide(factor);
+        MonetaryValue splitFractionResidualBookValue = theoreticalPostSplitPrice.multiply(splitFractionQuantity);
+        MonetaryValue totalCost = current.getTotalCost()
+                .subtract(splitFractionResidualBookValue)
+                .add(impact.getFee());
+        MonetaryValue averagePrice = quantity > 0
+                ? totalCost.divide(BigDecimal.valueOf(quantity))
+                : MonetaryValue.zero();
+
+        validateSplitBookIdentity(current, impact, totalCost, splitFractionResidualBookValue);
+
+        return PositionApplyResult.builder()
+                .state(current.toBuilder()
+                        .quantity(quantity)
+                        .averagePrice(averagePrice)
+                        .totalCost(totalCost)
+                        .build())
+                .splitFractionResidualBookValue(splitFractionResidualBookValue)
+                .build();
+    }
+
+    private void validateSplitBookIdentity(PositionState current,
+                                           PositionImpactData impact,
+                                           MonetaryValue adjustedTotalCost,
+                                           MonetaryValue splitFractionResidualBookValue) {
+        MonetaryValue beforeSplit = current.getTotalCost().add(impact.getFee());
+        MonetaryValue recomposed = adjustedTotalCost.add(splitFractionResidualBookValue);
+        if (!beforeSplit.equals(recomposed)) {
+            throw new IllegalStateException("Inconsistência contábil no split: total antes diferente da recomposição");
         }
-
-        int quantity = splitQuantity.setScale(0, RoundingMode.UNNECESSARY).intValueExact();
-        MonetaryValue averagePrice = current.getAveragePrice().divide(factor);
-        MonetaryValue totalCost = averagePrice.multiply(quantity).add(impact.getFee());
-
-        return PositionApplyResult.of(current.toBuilder()
-                .quantity(quantity)
-                .averagePrice(averagePrice)
-                .totalCost(totalCost)
-                .build());
     }
 
     private PositionApplyResult applyGenericAdjust(PositionState current, PositionImpactData impact) {

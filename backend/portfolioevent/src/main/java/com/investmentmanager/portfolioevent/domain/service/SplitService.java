@@ -52,7 +52,7 @@ public class SplitService implements SplitUseCase {
                 command.getEventDate(),
                 brokerKey,
                 sourceReferenceId,
-                PortfolioEventMetadata.split(ratio.canonical()));
+                PortfolioEventMetadata.split(ratio.canonical(), sourceReferenceId));
 
         if (repository.existsByIdempotencyKey(split.getIdempotencyKey())) {
             throw new IllegalStateException("Split duplicado para a mesma chave de idempotência");

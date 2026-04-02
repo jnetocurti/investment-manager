@@ -45,5 +45,8 @@ public class PortfolioEventDocument {
     public static class MetadataDocument {
         private String subscriptionTicker;
         private String splitRatio;
+        private BigDecimal splitFractionResidualBookValue;
+        private String splitFractionFlowStatus;
+        private String splitFractionSourceReferenceId;
     }
 }

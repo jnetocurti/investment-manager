@@ -1,5 +1,7 @@
 package com.investmentmanager.portfolioevent.domain.model;
 
+import java.math.BigDecimal;
+
 import lombok.Builder;
 import lombok.Getter;
 
@@ -9,6 +11,9 @@ public class PortfolioEventMetadata {
 
     private final String subscriptionTicker;
     private final String splitRatio;
+    private final BigDecimal splitFractionResidualBookValue;
+    private final String splitFractionFlowStatus;
+    private final String splitFractionSourceReferenceId;
 
     public static PortfolioEventMetadata subscription(String subscriptionTicker) {
         return PortfolioEventMetadata.builder()
@@ -16,9 +21,11 @@ public class PortfolioEventMetadata {
                 .build();
     }
 
-    public static PortfolioEventMetadata split(String splitRatio) {
+    public static PortfolioEventMetadata split(String splitRatio, String splitFractionSourceReferenceId) {
         return PortfolioEventMetadata.builder()
                 .splitRatio(splitRatio)
+                .splitFractionFlowStatus("PENDING_SETTLEMENT")
+                .splitFractionSourceReferenceId(splitFractionSourceReferenceId)
                 .build();
     }
 }
