@@ -22,7 +22,8 @@ class PositionImpactTranslatorRegistryTest {
     void shouldTranslateBuyIntoImpactWithBrokerKey() {
         PositionImpactTranslatorRegistry registry = new PositionImpactTranslatorRegistry(
                 List.of(new BuyEventImpactTranslator(), new SellEventImpactTranslator(),
-                        new SubscriptionPendingImpactTranslator(), new SubscriptionConversionImpactTranslator()));
+                        new SubscriptionPendingImpactTranslator(), new SubscriptionConversionImpactTranslator(),
+                        new TickerRenameImpactTranslator()));
 
         PortfolioEvent buy = PortfolioEvent.builder()
                 .id("event-1")

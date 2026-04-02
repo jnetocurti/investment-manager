@@ -60,6 +60,8 @@ class PortfolioEventDocumentMapper {
         var metadataDocument = new PortfolioEventDocument.MetadataDocument();
         metadataDocument.setSubscriptionTicker(metadata.getSubscriptionTicker());
         metadataDocument.setSplitRatio(metadata.getSplitRatio());
+        metadataDocument.setOldTicker(metadata.getOldTicker());
+        metadataDocument.setNewTicker(metadata.getNewTicker());
         metadataDocument.setSplitFractionResidualBookValue(metadata.getSplitFractionResidualBookValue());
         metadataDocument.setSplitFractionFlowStatus(metadata.getSplitFractionFlowStatus());
         metadataDocument.setSplitFractionSourceReferenceId(metadata.getSplitFractionSourceReferenceId());
@@ -73,6 +75,8 @@ class PortfolioEventDocumentMapper {
         return PortfolioEventMetadata.builder()
                 .subscriptionTicker(metadataDocument.getSubscriptionTicker())
                 .splitRatio(metadataDocument.getSplitRatio())
+                .oldTicker(metadataDocument.getOldTicker())
+                .newTicker(metadataDocument.getNewTicker())
                 .splitFractionResidualBookValue(metadataDocument.getSplitFractionResidualBookValue())
                 .splitFractionFlowStatus(metadataDocument.getSplitFractionFlowStatus())
                 .splitFractionSourceReferenceId(metadataDocument.getSplitFractionSourceReferenceId())

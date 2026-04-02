@@ -9,5 +9,6 @@ public enum EventType {
     SELL,
     SUBSCRIPTION,
     SUBSCRIPTION_CONVERSION,
-    SPLIT
+    SPLIT,
+    TICKER_RENAME
 }
