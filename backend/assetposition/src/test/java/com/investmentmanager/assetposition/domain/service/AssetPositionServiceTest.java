@@ -246,6 +246,102 @@ class AssetPositionServiceTest {
                 eq("SPLIT_FRACTION:split:2"));
     }
 
+    @Test
+    void shouldProjectOldTickerAsZeroAfterTickerRenameImpacts() {
+        PositionImpactQueryPort impactQueryPort = mock(PositionImpactQueryPort.class);
+        AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
+        AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
+        BrokerCatalogQueryPort brokerCatalogQueryPort = mock(BrokerCatalogQueryPort.class);
+
+        when(brokerCatalogQueryPort.findByBrokerKey("BROKER_XP"))
+                .thenReturn(Optional.of(new BrokerCatalogQueryPort.BrokerDisplayData("XP", "12")));
+
+        AssetPositionService service = new AssetPositionService(
+                impactQueryPort,
+                positionRepository,
+                historyRepository,
+                brokerCatalogQueryPort);
+
+        List<PositionImpactData> impacts = List.of(
+                impact("buy-1", "GETT11", PositionImpactType.INCREASE, 25, "100", "0",
+                        LocalDate.of(2024, 1, 10), 1),
+                PositionImpactData.builder()
+                        .originalEventId("rename-1")
+                        .sequence(1)
+                        .ticker("GETT11")
+                        .assetType(AssetType.REAL_ESTATE_FUND_BRL)
+                        .impactType(PositionImpactType.DECREASE)
+                        .quantity(25)
+                        .unitPrice(MonetaryValue.zero())
+                        .fee(MonetaryValue.zero())
+                        .eventDate(LocalDate.of(2024, 2, 10))
+                        .createdAt(LocalDateTime.of(2024, 2, 10, 10, 0))
+                        .sourceType("CORPORATE_ACTION")
+                        .brokerKey("BROKER_XP")
+                        .sourceReferenceId("TICKER_RENAME:GETT11:GGRC11:2024-02-10")
+                        .build());
+
+        when(impactQueryPort.findByTickerAndAssetTypeAndBrokerKey("GETT11", AssetType.REAL_ESTATE_FUND_BRL, "BROKER_XP"))
+                .thenReturn(impacts);
+        when(positionRepository.findByAssetNameAndAssetTypeAndBrokerKey("GETT11", AssetType.REAL_ESTATE_FUND_BRL, "BROKER_XP"))
+                .thenReturn(Optional.empty());
+        when(positionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var position = service.calculatePosition("GETT11", AssetType.REAL_ESTATE_FUND_BRL, "BROKER_XP");
+
+        assertThat(position).isNotNull();
+        assertThat(position.getQuantity()).isEqualTo(0);
+        assertThat(position.getAveragePrice().toBigDecimal()).isEqualByComparingTo("0.000000");
+        assertThat(position.getTotalCost().toBigDecimal()).isEqualByComparingTo("0.000000");
+    }
+
+    @Test
+    void shouldProjectNewTickerWithPreservedEconomicsAfterTickerRenameImpacts() {
+        PositionImpactQueryPort impactQueryPort = mock(PositionImpactQueryPort.class);
+        AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
+        AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
+        BrokerCatalogQueryPort brokerCatalogQueryPort = mock(BrokerCatalogQueryPort.class);
+
+        when(brokerCatalogQueryPort.findByBrokerKey("BROKER_XP"))
+                .thenReturn(Optional.of(new BrokerCatalogQueryPort.BrokerDisplayData("XP", "12")));
+
+        AssetPositionService service = new AssetPositionService(
+                impactQueryPort,
+                positionRepository,
+                historyRepository,
+                brokerCatalogQueryPort);
+
+        List<PositionImpactData> impacts = List.of(
+                PositionImpactData.builder()
+                        .originalEventId("rename-1")
+                        .sequence(2)
+                        .ticker("GGRC11")
+                        .assetType(AssetType.REAL_ESTATE_FUND_BRL)
+                        .impactType(PositionImpactType.INCREASE)
+                        .quantity(25)
+                        .unitPrice(MonetaryValue.of("100"))
+                        .fee(MonetaryValue.zero())
+                        .eventDate(LocalDate.of(2024, 2, 10))
+                        .createdAt(LocalDateTime.of(2024, 2, 10, 10, 0))
+                        .sourceType("CORPORATE_ACTION")
+                        .brokerKey("BROKER_XP")
+                        .sourceReferenceId("TICKER_RENAME:GETT11:GGRC11:2024-02-10")
+                        .build());
+
+        when(impactQueryPort.findByTickerAndAssetTypeAndBrokerKey("GGRC11", AssetType.REAL_ESTATE_FUND_BRL, "BROKER_XP"))
+                .thenReturn(impacts);
+        when(positionRepository.findByAssetNameAndAssetTypeAndBrokerKey("GGRC11", AssetType.REAL_ESTATE_FUND_BRL, "BROKER_XP"))
+                .thenReturn(Optional.empty());
+        when(positionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var position = service.calculatePosition("GGRC11", AssetType.REAL_ESTATE_FUND_BRL, "BROKER_XP");
+
+        assertThat(position).isNotNull();
+        assertThat(position.getQuantity()).isEqualTo(25);
+        assertThat(position.getAveragePrice().toBigDecimal()).isEqualByComparingTo("100.000000");
+        assertThat(position.getTotalCost().toBigDecimal()).isEqualByComparingTo("2500.000000");
+    }
+
     private PositionImpactData impact(String id,
                                       String ticker,
                                       PositionImpactType type,
