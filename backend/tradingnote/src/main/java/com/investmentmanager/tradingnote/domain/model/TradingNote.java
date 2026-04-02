@@ -92,7 +92,7 @@ public class TradingNote {
     public String buildStorageFilename() {
         String brokerName = broker.getName().toUpperCase();
         String date = tradingDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-        return brokerName + "_" + date + ".pdf";
+        return brokerName + "_" + date + "_" + noteNumber + ".pdf";
     }
 
     private void validate() {
