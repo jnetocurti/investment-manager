@@ -1,14 +1,28 @@
 #!/bin/bash
 #
-# Carga completa: notas de negociação + subscrições + splits + trocas de ticker
+# Carga completa (flexível): notas de negociação + eventos corporativos
 #
 # Uso:
-#   ./scripts/load-data.sh <diretório-notas> [arquivo-subscricoes.json] [arquivo-splits.json] [arquivo-ticker-renames.json]
+#   ./scripts/load-data.sh [opções]
 #
 # Exemplos:
-#   ./scripts/load-data.sh ~/notas_negociacao
-#   ./scripts/load-data.sh ~/notas_negociacao subscricoes.json
-#   ./scripts/load-data.sh ~/notas_negociacao subscricoes.json splits.json ticker-renames.json
+#   # Todos os processamentos, com parâmetros nomeados (sem depender de ordem)
+#   ./scripts/load-data.sh \
+#     --notes-dir ~/notas_negociacao \
+#     --subscriptions-file scripts/subscricoes-exemplo.json \
+#     --splits-file scripts/splits-exemplo.json \
+#     --ticker-renames-file scripts/ticker-renames-exemplo.json \
+#     --asset-conversions-file scripts/asset-conversions-exemplo.json
+#
+#   # Apenas eventos corporativos (sem upload de notas)
+#   ./scripts/load-data.sh \
+#     --processes subscriptions,splits,asset-conversions \
+#     --subscriptions-file scripts/subscricoes-exemplo.json \
+#     --splits-file scripts/splits-exemplo.json \
+#     --asset-conversions-file scripts/asset-conversions-exemplo.json
+#
+#   # Compatibilidade com chamada legada (ordem fixa)
+#   ./scripts/load-data.sh <diretório-notas> [arquivo-subscricoes.json] [arquivo-splits.json] [arquivo-ticker-renames.json]
 #
 # O arquivo de subscrições é um JSON array:
 # [
@@ -34,35 +48,133 @@ MONGO_CONTAINER="investmentmanager-mongodb"
 RABBIT_CONTAINER="investmentmanager-rabbitmq"
 DB_NAME="investmentmanager"
 
-# --- Validação de argumentos ---
+# --- Validação e parsing de argumentos ---
 
-NOTES_DIR="${1:-}"
-SUBSCRIPTIONS_FILE="${2:-}"
-SPLITS_FILE="${3:-}"
-TICKER_RENAMES_FILE="${4:-}"
+NOTES_DIR=""
+SUBSCRIPTIONS_FILE=""
+SPLITS_FILE=""
+TICKER_RENAMES_FILE=""
+ASSET_CONVERSIONS_FILE=""
+PROCESSES="all"
 
-if [ -z "$NOTES_DIR" ]; then
-  echo "Uso: $0 <diretório-notas> [arquivo-subscricoes.json] [arquivo-splits.json] [arquivo-ticker-renames.json]"
-  exit 1
+print_usage() {
+  cat <<EOF
+Uso:
+  $0 [opções]
+
+Opções:
+  --notes-dir <dir>                 Diretório com PDFs de notas de negociação
+  --subscriptions-file <json>       JSON array para /api/subscriptions
+  --splits-file <json>              JSON array para /api/splits
+  --ticker-renames-file <json>      JSON array para /api/ticker-renames
+  --asset-conversions-file <json>   JSON array para /api/asset-conversions
+  --processes <lista>               Lista separada por vírgula:
+                                    trading-notes,subscriptions,splits,ticker-renames,asset-conversions,all
+  -h, --help                        Exibe esta ajuda
+
+Compatibilidade legada:
+  $0 <diretório-notas> [arquivo-subscricoes.json] [arquivo-splits.json] [arquivo-ticker-renames.json]
+EOF
+}
+
+is_named_mode=false
+if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
+  print_usage
+  exit 0
 fi
 
-if [ ! -d "$NOTES_DIR" ]; then
-  echo "Erro: diretório não encontrado: $NOTES_DIR"
-  exit 1
+for arg in "$@"; do
+  case "$arg" in
+    --notes-dir|--subscriptions-file|--splits-file|--ticker-renames-file|--asset-conversions-file|--processes)
+      is_named_mode=true
+      break
+      ;;
+  esac
+done
+
+if [ "$is_named_mode" = true ]; then
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --notes-dir)
+        NOTES_DIR="${2:-}"
+        shift 2
+        ;;
+      --subscriptions-file)
+        SUBSCRIPTIONS_FILE="${2:-}"
+        shift 2
+        ;;
+      --splits-file)
+        SPLITS_FILE="${2:-}"
+        shift 2
+        ;;
+      --ticker-renames-file)
+        TICKER_RENAMES_FILE="${2:-}"
+        shift 2
+        ;;
+      --asset-conversions-file)
+        ASSET_CONVERSIONS_FILE="${2:-}"
+        shift 2
+        ;;
+      --processes)
+        PROCESSES="${2:-}"
+        shift 2
+        ;;
+      -h|--help)
+        print_usage
+        exit 0
+        ;;
+      *)
+        echo "Erro: opção desconhecida '$1'"
+        print_usage
+        exit 1
+        ;;
+    esac
+  done
+else
+  NOTES_DIR="${1:-}"
+  SUBSCRIPTIONS_FILE="${2:-}"
+  SPLITS_FILE="${3:-}"
+  TICKER_RENAMES_FILE="${4:-}"
 fi
 
-if [ -n "$SUBSCRIPTIONS_FILE" ] && [ ! -f "$SUBSCRIPTIONS_FILE" ]; then
+should_process() {
+  local process_name="$1"
+  if [ "$PROCESSES" = "all" ] || [ -z "$PROCESSES" ]; then
+    return 0
+  fi
+  local normalized=",$PROCESSES,"
+  [[ "$normalized" == *",$process_name,"* ]]
+}
+
+if should_process "trading-notes"; then
+  if [ -z "$NOTES_DIR" ]; then
+    echo "Erro: --notes-dir é obrigatório quando 'trading-notes' está habilitado."
+    print_usage
+    exit 1
+  fi
+  if [ ! -d "$NOTES_DIR" ]; then
+    echo "Erro: diretório não encontrado: $NOTES_DIR"
+    exit 1
+  fi
+fi
+
+if should_process "subscriptions" && [ -n "$SUBSCRIPTIONS_FILE" ] && [ ! -f "$SUBSCRIPTIONS_FILE" ]; then
   echo "Erro: arquivo de subscrições não encontrado: $SUBSCRIPTIONS_FILE"
   exit 1
 fi
 
-if [ -n "$SPLITS_FILE" ] && [ ! -f "$SPLITS_FILE" ]; then
+if should_process "splits" && [ -n "$SPLITS_FILE" ] && [ ! -f "$SPLITS_FILE" ]; then
   echo "Erro: arquivo de splits não encontrado: $SPLITS_FILE"
   exit 1
 fi
 
-if [ -n "$TICKER_RENAMES_FILE" ] && [ ! -f "$TICKER_RENAMES_FILE" ]; then
+if should_process "ticker-renames" && [ -n "$TICKER_RENAMES_FILE" ] && [ ! -f "$TICKER_RENAMES_FILE" ]; then
   echo "Erro: arquivo de trocas de ticker não encontrado: $TICKER_RENAMES_FILE"
+  exit 1
+fi
+
+if should_process "asset-conversions" && [ -n "$ASSET_CONVERSIONS_FILE" ] && [ ! -f "$ASSET_CONVERSIONS_FILE" ]; then
+  echo "Erro: arquivo de conversões de ativo não encontrado: $ASSET_CONVERSIONS_FILE"
   exit 1
 fi
 
@@ -139,34 +251,36 @@ fi
 
 # --- 4. Upload de notas ---
 
-echo ""
-echo "=== Enviando notas de negociação ==="
+if should_process "trading-notes"; then
+  echo ""
+  echo "=== Enviando notas de negociação ==="
 
-PDF_COUNT=$(find "$NOTES_DIR" -name "*.pdf" | wc -l | tr -d ' ')
-echo "Encontrados $PDF_COUNT PDFs em $NOTES_DIR"
+  PDF_COUNT=$(find "$NOTES_DIR" -name "*.pdf" | wc -l | tr -d ' ')
+  echo "Encontrados $PDF_COUNT PDFs em $NOTES_DIR"
 
-SUCCESS=0
-FAIL=0
-SKIPPED=0
+  SUCCESS=0
+  FAIL=0
+  SKIPPED=0
 
-for pdf in $(find "$NOTES_DIR" -name "*.pdf" | sort); do
-  STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API_BASE/api/trading-notes/upload" -F "file=@$pdf" 2>/dev/null)
-  if [ "$STATUS" = "200" ]; then
-    SUCCESS=$((SUCCESS + 1))
-  elif [ "$STATUS" = "422" ]; then
-    SKIPPED=$((SKIPPED + 1))
-    echo "SKIPPED - $pdf"
-  else
-    FAIL=$((FAIL + 1))
-    echo "  FAIL ($STATUS): $(basename "$pdf")"
-  fi
-done
+  for pdf in $(find "$NOTES_DIR" -name "*.pdf" | sort); do
+    STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API_BASE/api/trading-notes/upload" -F "file=@$pdf" 2>/dev/null)
+    if [ "$STATUS" = "200" ]; then
+      SUCCESS=$((SUCCESS + 1))
+    elif [ "$STATUS" = "422" ]; then
+      SKIPPED=$((SKIPPED + 1))
+      echo "SKIPPED - $pdf"
+    else
+      FAIL=$((FAIL + 1))
+      echo "  FAIL ($STATUS): $(basename "$pdf")"
+    fi
+  done
 
-echo "Notas: $SUCCESS ok, $SKIPPED ignorados (PDF inválido), $FAIL erros"
+  echo "Notas: $SUCCESS ok, $SKIPPED ignorados (PDF inválido), $FAIL erros"
+fi
 
 # --- 5. Subscrições ---
 
-if [ -n "$SUBSCRIPTIONS_FILE" ]; then
+if should_process "subscriptions" && [ -n "$SUBSCRIPTIONS_FILE" ]; then
   echo ""
   echo "=== Enviando subscrições ==="
 
@@ -201,7 +315,7 @@ fi
 
 # --- 6. Splits ---
 
-if [ -n "$SPLITS_FILE" ]; then
+if should_process "splits" && [ -n "$SPLITS_FILE" ]; then
   echo ""
   echo "=== Enviando splits ==="
 
@@ -228,7 +342,7 @@ fi
 
 # --- 7. Trocas de ticker ---
 
-if [ -n "$TICKER_RENAMES_FILE" ]; then
+if should_process "ticker-renames" && [ -n "$TICKER_RENAMES_FILE" ]; then
   echo ""
   echo "=== Enviando trocas de ticker ==="
 
@@ -254,13 +368,41 @@ with open('$TICKER_RENAMES_FILE') as f:
   echo "Trocas de ticker processadas."
 fi
 
-# --- 8. Aguardar processamento assíncrono ---
+# --- 8. Conversões/incorporações de ativo ---
+
+if should_process "asset-conversions" && [ -n "$ASSET_CONVERSIONS_FILE" ]; then
+  echo ""
+  echo "=== Enviando conversões/incorporações de ativo ==="
+
+  CONV_COUNT=$(python3 -c "import json; print(len(json.load(open('$ASSET_CONVERSIONS_FILE'))))" 2>/dev/null || echo "0")
+  echo "Encontradas $CONV_COUNT conversões em $ASSET_CONVERSIONS_FILE"
+
+  python3 -c "
+import json
+with open('$ASSET_CONVERSIONS_FILE') as f:
+    for c in json.load(f):
+        print(json.dumps(c))
+" | while IFS= read -r conversion_json; do
+    STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API_BASE/api/asset-conversions" \
+      -H "Content-Type: application/json" \
+      -d "$conversion_json" 2>/dev/null)
+    if [ "$STATUS" != "200" ]; then
+      OLD_TICKER=$(echo "$conversion_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('oldTicker','?'))" 2>/dev/null)
+      NEW_TICKER=$(echo "$conversion_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('newTicker','?'))" 2>/dev/null)
+      echo "  FAIL ($STATUS): $OLD_TICKER -> $NEW_TICKER"
+    fi
+  done
+
+  echo "Conversões/incorporações processadas."
+fi
+
+# --- 9. Aguardar processamento assíncrono ---
 
 echo ""
 echo "=== Aguardando processamento assíncrono ==="
 sleep 10
 
-# --- 9. Resultado ---
+# --- 10. Resultado ---
 
 echo ""
 echo "=== Resultado ==="
