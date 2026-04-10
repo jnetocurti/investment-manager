@@ -27,6 +27,7 @@ class PortfolioEventDocumentMapper {
         doc.setBrokerKey(event.getBrokerKey());
         doc.setIdempotencyKey(event.getIdempotencyKey());
         doc.setSourceReferenceId(event.getSourceReferenceId());
+        doc.setEventOrder(event.getEventOrder());
         doc.setMetadata(toMetadataDocument(event.getMetadata()));
         doc.setCreatedAt(event.getCreatedAt());
         return doc;
@@ -48,6 +49,7 @@ class PortfolioEventDocumentMapper {
                 .brokerKey(doc.getBrokerKey())
                 .idempotencyKey(doc.getIdempotencyKey())
                 .sourceReferenceId(doc.getSourceReferenceId())
+                .eventOrder(doc.getEventOrder() != null ? doc.getEventOrder() : 1)
                 .metadata(toMetadata(doc.getMetadata()))
                 .createdAt(doc.getCreatedAt())
                 .build();
@@ -62,6 +64,8 @@ class PortfolioEventDocumentMapper {
         metadataDocument.setSplitRatio(metadata.getSplitRatio());
         metadataDocument.setOldTicker(metadata.getOldTicker());
         metadataDocument.setNewTicker(metadata.getNewTicker());
+        metadataDocument.setBonusRatio(metadata.getBonusRatio());
+        metadataDocument.setBonusBaseQuantity(metadata.getBonusBaseQuantity());
         metadataDocument.setSplitFractionResidualBookValue(metadata.getSplitFractionResidualBookValue());
         metadataDocument.setSplitFractionFlowStatus(metadata.getSplitFractionFlowStatus());
         metadataDocument.setSplitFractionSourceReferenceId(metadata.getSplitFractionSourceReferenceId());
@@ -77,6 +81,8 @@ class PortfolioEventDocumentMapper {
                 .splitRatio(metadataDocument.getSplitRatio())
                 .oldTicker(metadataDocument.getOldTicker())
                 .newTicker(metadataDocument.getNewTicker())
+                .bonusRatio(metadataDocument.getBonusRatio())
+                .bonusBaseQuantity(metadataDocument.getBonusBaseQuantity())
                 .splitFractionResidualBookValue(metadataDocument.getSplitFractionResidualBookValue())
                 .splitFractionFlowStatus(metadataDocument.getSplitFractionFlowStatus())
                 .splitFractionSourceReferenceId(metadataDocument.getSplitFractionSourceReferenceId())

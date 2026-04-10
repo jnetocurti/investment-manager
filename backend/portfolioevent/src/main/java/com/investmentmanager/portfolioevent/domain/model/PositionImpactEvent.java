@@ -31,6 +31,7 @@ public class PositionImpactEvent {
     private final ImpactSourceType sourceType;
     private final String brokerKey;
     private final String sourceReferenceId;
+    private final Integer eventOrder;
     @Builder.Default
     private final int schemaVersion = 1;
     private final LocalDateTime createdAt;

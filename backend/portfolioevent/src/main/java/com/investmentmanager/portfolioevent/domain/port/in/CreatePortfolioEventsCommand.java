@@ -17,6 +17,7 @@ public class CreatePortfolioEventsCommand {
     String brokerName;
     String brokerDocument;
     LocalDate tradingDate;
+    LocalDate settlementDate;
     List<OperationData> operations;
     String currency;
 

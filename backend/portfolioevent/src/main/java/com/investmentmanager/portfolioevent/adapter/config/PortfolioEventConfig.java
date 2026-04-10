@@ -9,9 +9,11 @@ import com.investmentmanager.portfolioevent.domain.port.out.PositionImpactEventR
 import com.investmentmanager.portfolioevent.domain.service.CanonicalBrokerResolver;
 import com.investmentmanager.portfolioevent.domain.service.PortfolioEventService;
 import com.investmentmanager.portfolioevent.domain.service.PositionImpactGenerationService;
+import com.investmentmanager.portfolioevent.domain.service.BonusService;
 import com.investmentmanager.portfolioevent.domain.service.SubscriptionService;
 import com.investmentmanager.portfolioevent.domain.service.impact.BuyEventImpactTranslator;
 import com.investmentmanager.portfolioevent.domain.service.impact.AssetConversionImpactTranslator;
+import com.investmentmanager.portfolioevent.domain.service.impact.BonusImpactTranslator;
 import com.investmentmanager.portfolioevent.domain.service.impact.PortfolioEventImpactTranslator;
 import com.investmentmanager.portfolioevent.domain.service.impact.PositionImpactTranslatorRegistry;
 import com.investmentmanager.portfolioevent.domain.service.impact.SellEventImpactTranslator;
@@ -23,6 +25,7 @@ import com.investmentmanager.portfolioevent.domain.service.SplitService;
 import com.investmentmanager.portfolioevent.domain.service.TickerRenameService;
 import com.investmentmanager.portfolioevent.domain.service.AssetConversionService;
 import com.investmentmanager.portfolioevent.domain.port.in.AssetConversionUseCase;
+import com.investmentmanager.portfolioevent.domain.port.in.BonusUseCase;
 import com.investmentmanager.portfolioevent.domain.port.in.TickerRenameUseCase;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -63,6 +66,11 @@ public class PortfolioEventConfig {
     }
 
     @Bean
+    public BonusImpactTranslator bonusImpactTranslator() {
+        return new BonusImpactTranslator();
+    }
+
+    @Bean
     public TickerRenameImpactTranslator tickerRenameImpactTranslator() {
         return new TickerRenameImpactTranslator();
     }
@@ -79,6 +87,7 @@ public class PortfolioEventConfig {
             SubscriptionPendingImpactTranslator pendingTranslator,
             SubscriptionConversionImpactTranslator conversionTranslator,
             SplitImpactTranslator splitImpactTranslator,
+            BonusImpactTranslator bonusImpactTranslator,
             TickerRenameImpactTranslator tickerRenameImpactTranslator,
             AssetConversionImpactTranslator assetConversionImpactTranslator) {
         return new PositionImpactTranslatorRegistry(List.<PortfolioEventImpactTranslator>of(
@@ -87,6 +96,7 @@ public class PortfolioEventConfig {
                 pendingTranslator,
                 conversionTranslator,
                 splitImpactTranslator,
+                bonusImpactTranslator,
                 tickerRenameImpactTranslator,
                 assetConversionImpactTranslator));
     }
@@ -122,6 +132,15 @@ public class PortfolioEventConfig {
             PositionImpactGenerationService impactGenerationService,
             CanonicalBrokerResolver canonicalBrokerResolver) {
         return new SplitService(repository, impactGenerationService, canonicalBrokerResolver);
+    }
+
+    @Bean
+    public BonusUseCase bonusUseCase(
+            PortfolioEventRepositoryPort repository,
+            PositionImpactGenerationService impactGenerationService,
+            CanonicalBrokerResolver canonicalBrokerResolver,
+            AssetPositionQueryPort assetPositionQueryPort) {
+        return new BonusService(repository, impactGenerationService, canonicalBrokerResolver, assetPositionQueryPort);
     }
 
     @Bean

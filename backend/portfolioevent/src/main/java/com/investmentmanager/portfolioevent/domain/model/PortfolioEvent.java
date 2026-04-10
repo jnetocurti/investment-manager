@@ -27,6 +27,7 @@ public class PortfolioEvent {
     private final LocalDate eventDate;
     private final String brokerKey;
     private final String sourceReferenceId;
+    private final Integer eventOrder;
     private final String idempotencyKey;
     private final PortfolioEventMetadata metadata;
     private final LocalDateTime createdAt;
@@ -41,7 +42,8 @@ public class PortfolioEvent {
                                                BigDecimal unitPrice,
                                                BigDecimal totalValue,
                                                BigDecimal fee,
-                                               String currency) {
+                                               String currency,
+                                               int eventOrder) {
         return create(
                 EventType.valueOf(operationType.name()),
                 EventSource.TRADING_NOTE,
@@ -55,6 +57,7 @@ public class PortfolioEvent {
                 eventDate,
                 brokerKey,
                 sourceReferenceId,
+                eventOrder,
                 null);
     }
 
@@ -70,6 +73,7 @@ public class PortfolioEvent {
                                         LocalDate eventDate,
                                         String brokerKey,
                                         String sourceReferenceId,
+                                        Integer eventOrder,
                                         PortfolioEventMetadata metadata) {
         PortfolioEvent event = PortfolioEvent.builder()
                 .eventType(eventType)
@@ -84,6 +88,7 @@ public class PortfolioEvent {
                 .eventDate(eventDate)
                 .brokerKey(brokerKey)
                 .sourceReferenceId(sourceReferenceId)
+                .eventOrder(eventOrder != null ? eventOrder : 1)
                 .idempotencyKey(PortfolioEventIdempotencyKey.of(
                         eventType,
                         assetName,

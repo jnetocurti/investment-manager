@@ -52,6 +52,7 @@ public class SplitService implements SplitUseCase {
                 command.getEventDate(),
                 brokerKey,
                 sourceReferenceId,
+                null,
                 PortfolioEventMetadata.split(ratio.canonical()));
 
         if (repository.existsByIdempotencyKey(split.getIdempotencyKey())) {

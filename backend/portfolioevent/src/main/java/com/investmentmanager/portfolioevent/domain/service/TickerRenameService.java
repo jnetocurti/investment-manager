@@ -72,6 +72,7 @@ public class TickerRenameService implements TickerRenameUseCase {
                 command.getEventDate(),
                 brokerKey,
                 sourceReferenceId,
+                null,
                 PortfolioEventMetadata.tickerRename(oldTicker, newTicker));
 
         if (repository.existsByIdempotencyKey(renameEvent.getIdempotencyKey())) {

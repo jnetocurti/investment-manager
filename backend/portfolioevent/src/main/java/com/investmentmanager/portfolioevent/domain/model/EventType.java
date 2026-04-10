@@ -10,6 +10,7 @@ public enum EventType {
     SUBSCRIPTION,
     SUBSCRIPTION_CONVERSION,
     SPLIT,
+    BONUS,
     TICKER_RENAME,
     ASSET_CONVERSION
 }

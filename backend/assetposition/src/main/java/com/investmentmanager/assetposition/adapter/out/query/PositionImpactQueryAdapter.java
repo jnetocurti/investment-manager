@@ -25,7 +25,7 @@ class PositionImpactQueryAdapter implements PositionImpactQueryPort {
             AssetType assetType,
             String brokerKey) {
         List<PositionImpactEventDocument> docs =
-                repository.findByTickerAndAssetTypeAndBrokerKeyOrderByEventDateAscSequenceAsc(
+                repository.findByTickerAndAssetTypeAndBrokerKeyOrderByEventDateAscEventOrderAscSequenceAscCreatedAtAsc(
                         ticker,
                         assetType != null ? assetType.name() : null,
                         brokerKey);
@@ -50,6 +50,7 @@ class PositionImpactQueryAdapter implements PositionImpactQueryPort {
                         .sourceType(doc.getSourceType())
                         .brokerKey(doc.getBrokerKey())
                         .sourceReferenceId(doc.getSourceReferenceId())
+                        .eventOrder(doc.getEventOrder() != null ? doc.getEventOrder() : 1)
                         .schemaVersion(doc.getSchemaVersion() != null ? doc.getSchemaVersion() : 1)
                         .createdAt(doc.getCreatedAt())
                         .build())

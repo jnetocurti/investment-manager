@@ -31,6 +31,7 @@ public class PositionImpactEventDocumentMapper {
         doc.setSourceType(event.getSourceType().name());
         doc.setBrokerKey(event.getBrokerKey());
         doc.setSourceReferenceId(event.getSourceReferenceId());
+        doc.setEventOrder(event.getEventOrder());
         doc.setSchemaVersion(event.getSchemaVersion());
         doc.setCreatedAt(event.getCreatedAt());
         return doc;
@@ -56,6 +57,7 @@ public class PositionImpactEventDocumentMapper {
                 .sourceType(ImpactSourceType.valueOf(doc.getSourceType()))
                 .brokerKey(doc.getBrokerKey())
                 .sourceReferenceId(doc.getSourceReferenceId())
+                .eventOrder(doc.getEventOrder() != null ? doc.getEventOrder() : 1)
                 .schemaVersion(doc.getSchemaVersion() != null ? doc.getSchemaVersion() : 1)
                 .createdAt(doc.getCreatedAt())
                 .build();
