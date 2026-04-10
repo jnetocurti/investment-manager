@@ -342,6 +342,102 @@ class AssetPositionServiceTest {
         assertThat(position.getTotalCost().toBigDecimal()).isEqualByComparingTo("2500.000000");
     }
 
+    @Test
+    void shouldProjectOriginTickerAsZeroAfterAssetConversionImpacts() {
+        PositionImpactQueryPort impactQueryPort = mock(PositionImpactQueryPort.class);
+        AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
+        AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
+        BrokerCatalogQueryPort brokerCatalogQueryPort = mock(BrokerCatalogQueryPort.class);
+
+        when(brokerCatalogQueryPort.findByBrokerKey("BROKER_XP"))
+                .thenReturn(Optional.of(new BrokerCatalogQueryPort.BrokerDisplayData("XP", "12")));
+
+        AssetPositionService service = new AssetPositionService(
+                impactQueryPort,
+                positionRepository,
+                historyRepository,
+                brokerCatalogQueryPort);
+
+        List<PositionImpactData> impacts = List.of(
+                impact("buy-1", "FOFT11", PositionImpactType.INCREASE, 10, "120.036907", "0",
+                        LocalDate.of(2019, 12, 15), 1),
+                PositionImpactData.builder()
+                        .originalEventId("conversion-1")
+                        .sequence(1)
+                        .ticker("FOFT11")
+                        .assetType(AssetType.REAL_ESTATE_FUND_BRL)
+                        .impactType(PositionImpactType.DECREASE)
+                        .quantity(10)
+                        .unitPrice(MonetaryValue.zero())
+                        .fee(MonetaryValue.zero())
+                        .eventDate(LocalDate.of(2020, 1, 2))
+                        .createdAt(LocalDateTime.of(2020, 1, 2, 10, 0))
+                        .sourceType("CORPORATE_ACTION")
+                        .brokerKey("BROKER_XP")
+                        .sourceReferenceId("ASSET_CONVERSION:FOFT11:HFOF11:2020-01-02:1:0.992479")
+                        .build());
+
+        when(impactQueryPort.findByTickerAndAssetTypeAndBrokerKey("FOFT11", AssetType.REAL_ESTATE_FUND_BRL, "BROKER_XP"))
+                .thenReturn(impacts);
+        when(positionRepository.findByAssetNameAndAssetTypeAndBrokerKey("FOFT11", AssetType.REAL_ESTATE_FUND_BRL, "BROKER_XP"))
+                .thenReturn(Optional.empty());
+        when(positionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var position = service.calculatePosition("FOFT11", AssetType.REAL_ESTATE_FUND_BRL, "BROKER_XP");
+
+        assertThat(position).isNotNull();
+        assertThat(position.getQuantity()).isEqualTo(0);
+        assertThat(position.getAveragePrice().toBigDecimal()).isEqualByComparingTo("0.000000");
+        assertThat(position.getTotalCost().toBigDecimal()).isEqualByComparingTo("0.000000");
+    }
+
+    @Test
+    void shouldProjectDestinationTickerWithIntegerConvertedQuantityAfterAssetConversionImpacts() {
+        PositionImpactQueryPort impactQueryPort = mock(PositionImpactQueryPort.class);
+        AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
+        AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
+        BrokerCatalogQueryPort brokerCatalogQueryPort = mock(BrokerCatalogQueryPort.class);
+
+        when(brokerCatalogQueryPort.findByBrokerKey("BROKER_XP"))
+                .thenReturn(Optional.of(new BrokerCatalogQueryPort.BrokerDisplayData("XP", "12")));
+
+        AssetPositionService service = new AssetPositionService(
+                impactQueryPort,
+                positionRepository,
+                historyRepository,
+                brokerCatalogQueryPort);
+
+        List<PositionImpactData> impacts = List.of(
+                PositionImpactData.builder()
+                        .originalEventId("conversion-1")
+                        .sequence(2)
+                        .ticker("HFOF11")
+                        .assetType(AssetType.REAL_ESTATE_FUND_BRL)
+                        .impactType(PositionImpactType.INCREASE)
+                        .quantity(9)
+                        .unitPrice(MonetaryValue.of("120.946546"))
+                        .fee(MonetaryValue.zero())
+                        .eventDate(LocalDate.of(2020, 1, 2))
+                        .createdAt(LocalDateTime.of(2020, 1, 2, 10, 0))
+                        .sourceType("CORPORATE_ACTION")
+                        .brokerKey("BROKER_XP")
+                        .sourceReferenceId("ASSET_CONVERSION:FOFT11:HFOF11:2020-01-02:1:0.992479")
+                        .build());
+
+        when(impactQueryPort.findByTickerAndAssetTypeAndBrokerKey("HFOF11", AssetType.REAL_ESTATE_FUND_BRL, "BROKER_XP"))
+                .thenReturn(impacts);
+        when(positionRepository.findByAssetNameAndAssetTypeAndBrokerKey("HFOF11", AssetType.REAL_ESTATE_FUND_BRL, "BROKER_XP"))
+                .thenReturn(Optional.empty());
+        when(positionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var position = service.calculatePosition("HFOF11", AssetType.REAL_ESTATE_FUND_BRL, "BROKER_XP");
+
+        assertThat(position).isNotNull();
+        assertThat(position.getQuantity()).isEqualTo(9);
+        assertThat(position.getAveragePrice().toBigDecimal()).isEqualByComparingTo("120.946546");
+        assertThat(position.getTotalCost().toBigDecimal()).isEqualByComparingTo("1088.518914");
+    }
+
     private PositionImpactData impact(String id,
                                       String ticker,
                                       PositionImpactType type,
