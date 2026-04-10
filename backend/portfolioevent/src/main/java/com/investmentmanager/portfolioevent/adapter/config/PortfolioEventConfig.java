@@ -138,9 +138,8 @@ public class PortfolioEventConfig {
     public BonusUseCase bonusUseCase(
             PortfolioEventRepositoryPort repository,
             PositionImpactGenerationService impactGenerationService,
-            CanonicalBrokerResolver canonicalBrokerResolver,
-            AssetPositionQueryPort assetPositionQueryPort) {
-        return new BonusService(repository, impactGenerationService, canonicalBrokerResolver, assetPositionQueryPort);
+            CanonicalBrokerResolver canonicalBrokerResolver) {
+        return new BonusService(repository, impactGenerationService, canonicalBrokerResolver);
     }
 
     @Bean

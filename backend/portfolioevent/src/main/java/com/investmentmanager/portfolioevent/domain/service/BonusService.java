@@ -8,12 +8,10 @@ import com.investmentmanager.portfolioevent.domain.model.PortfolioEvent;
 import com.investmentmanager.portfolioevent.domain.model.PortfolioEventMetadata;
 import com.investmentmanager.portfolioevent.domain.port.in.BonusUseCase;
 import com.investmentmanager.portfolioevent.domain.port.in.CreateBonusCommand;
-import com.investmentmanager.portfolioevent.domain.port.out.AssetPositionQueryPort;
 import com.investmentmanager.portfolioevent.domain.port.out.PortfolioEventRepositoryPort;
 import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.List;
 import java.util.Locale;
 
@@ -23,7 +21,6 @@ public class BonusService implements BonusUseCase {
     private final PortfolioEventRepositoryPort repository;
     private final PositionImpactGenerationService impactGenerationService;
     private final CanonicalBrokerResolver brokerResolver;
-    private final AssetPositionQueryPort assetPositionQueryPort;
 
     @Override
     public PortfolioEvent create(CreateBonusCommand command) {
@@ -40,47 +37,29 @@ public class BonusService implements BonusUseCase {
                         .build())
                 .getBrokerKey();
 
-        var basePosition = assetPositionQueryPort.findByAssetNameAndAssetTypeAndBrokerKey(
-                        ticker,
-                        command.getTargetAssetType(),
-                        brokerKey)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Posição base não encontrada para o ticker: " + ticker));
-
-        if (basePosition.quantity() <= 0) {
-            throw new IllegalStateException("Posição base não possui quantidade ativa para o ticker: " + ticker);
-        }
-
-        int bonusQuantity = BigDecimal.valueOf(basePosition.quantity())
-                .multiply(BigDecimal.valueOf(ratio.getBonus()))
-                .divide(BigDecimal.valueOf(ratio.getBase()), 0, RoundingMode.DOWN)
-                .intValueExact();
-
-        if (bonusQuantity <= 0) {
-            throw new IllegalStateException("Bonificação não gera quantidade elegível para a posição base atual");
-        }
-
         String sourceReferenceId = "BONUS:%s:%s:%s".formatted(
                 ticker,
                 command.getEventDate(),
                 ratio.canonical());
 
-        BigDecimal totalValue = command.getUnitPrice().multiply(BigDecimal.valueOf(bonusQuantity));
+        // A quantidade efetiva é calculada na projeção de posição, respeitando a linha do tempo do evento.
+        int placeholderQuantity = 1;
+        BigDecimal placeholderTotalValue = command.getUnitPrice();
 
         PortfolioEvent bonus = PortfolioEvent.create(
                 EventType.BONUS,
                 EventSource.CORPORATE_ACTION,
                 ticker,
                 command.getTargetAssetType(),
-                bonusQuantity,
+                placeholderQuantity,
                 command.getUnitPrice(),
-                totalValue,
+                placeholderTotalValue,
                 BigDecimal.ZERO,
                 command.getCurrency(),
                 command.getEventDate(),
                 brokerKey,
                 sourceReferenceId,
-                PortfolioEventMetadata.bonus(ratio.canonical(), basePosition.quantity()));
+                PortfolioEventMetadata.bonus(ratio.canonical(), null));
 
         if (repository.existsByIdempotencyKey(bonus.getIdempotencyKey())) {
             throw new IllegalStateException("Bonificação duplicada para a mesma chave de idempotência");

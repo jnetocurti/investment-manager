@@ -80,7 +80,7 @@ public class BonusController {
             String targetAssetType,
             String ratio,
             Integer baseQuantity,
-            int bonusQuantity,
+            int quantityPlaceholder,
             String unitPrice,
             String totalValue,
             String brokerKey,

@@ -2,6 +2,9 @@ package com.investmentmanager.portfolioevent.domain.model;
 
 import lombok.Getter;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
+
 @Getter
 public class BonusRatio {
 
@@ -37,5 +40,9 @@ public class BonusRatio {
 
     public String canonical() {
         return bonus + ":" + base;
+    }
+
+    public BigDecimal factor() {
+        return BigDecimal.valueOf(bonus).divide(BigDecimal.valueOf(base), MathContext.DECIMAL64);
     }
 }

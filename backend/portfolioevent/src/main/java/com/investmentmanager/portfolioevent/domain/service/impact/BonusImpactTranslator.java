@@ -1,6 +1,7 @@
 package com.investmentmanager.portfolioevent.domain.service.impact;
 
 import com.investmentmanager.commons.domain.model.PositionImpactType;
+import com.investmentmanager.portfolioevent.domain.model.BonusRatio;
 import com.investmentmanager.portfolioevent.domain.model.EventType;
 import com.investmentmanager.portfolioevent.domain.model.ImpactSourceType;
 import com.investmentmanager.portfolioevent.domain.model.PortfolioEvent;
@@ -18,6 +19,9 @@ public class BonusImpactTranslator implements PortfolioEventImpactTranslator {
 
     @Override
     public List<PositionImpactEvent> translate(PortfolioEvent event) {
+        String ratioValue = event.getMetadata() != null ? event.getMetadata().getBonusRatio() : null;
+        BonusRatio ratio = BonusRatio.parse(ratioValue);
+
         return List.of(PositionImpactEvent.builder()
                 .originalEventId(event.getId())
                 .ticker(event.getAssetName())
@@ -27,6 +31,7 @@ public class BonusImpactTranslator implements PortfolioEventImpactTranslator {
                 .quantity(event.getQuantity())
                 .unitPrice(event.getUnitPrice())
                 .fee(event.getFee())
+                .factor(ratio.factor())
                 .eventDate(event.getEventDate())
                 .originType(event.getEventType())
                 .sourceType(ImpactSourceType.CORPORATE_ACTION)

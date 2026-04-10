@@ -38,7 +38,7 @@ public class PortfolioEventMetadata {
                 .build();
     }
 
-    public static PortfolioEventMetadata bonus(String bonusRatio, int bonusBaseQuantity) {
+    public static PortfolioEventMetadata bonus(String bonusRatio, Integer bonusBaseQuantity) {
         return PortfolioEventMetadata.builder()
                 .bonusRatio(bonusRatio)
                 .bonusBaseQuantity(bonusBaseQuantity)

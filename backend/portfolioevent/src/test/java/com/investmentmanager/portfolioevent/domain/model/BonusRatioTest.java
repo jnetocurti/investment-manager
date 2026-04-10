@@ -14,6 +14,7 @@ class BonusRatioTest {
         assertEquals(1, ratio.getBonus());
         assertEquals(10, ratio.getBase());
         assertEquals("1:10", ratio.canonical());
+        assertEquals("0.1", ratio.factor().toPlainString());
     }
 
     @Test

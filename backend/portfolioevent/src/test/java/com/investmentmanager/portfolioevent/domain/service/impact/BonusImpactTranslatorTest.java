@@ -26,9 +26,9 @@ class BonusImpactTranslatorTest {
                 .eventSource(EventSource.CORPORATE_ACTION)
                 .assetName("BBDC3")
                 .assetType(AssetType.STOCKS_BRL)
-                .quantity(5)
+                .quantity(1)
                 .unitPrice(MonetaryValue.of("4.527177676"))
-                .totalValue(MonetaryValue.of("22.635888380"))
+                .totalValue(MonetaryValue.of("4.527177676"))
                 .fee(MonetaryValue.zero())
                 .currency("BRL")
                 .eventDate(LocalDate.of(2021, 4, 23))
@@ -43,7 +43,8 @@ class BonusImpactTranslatorTest {
 
         assertThat(impacts).hasSize(1);
         assertThat(impacts.getFirst().getImpactType()).isEqualTo(PositionImpactType.INCREASE);
-        assertThat(impacts.getFirst().getQuantity()).isEqualTo(5);
+        assertThat(impacts.getFirst().getQuantity()).isEqualTo(1);
+        assertThat(impacts.getFirst().getFactor()).isEqualByComparingTo("0.1");
         assertThat(impacts.getFirst().getUnitPrice().toDisplayValue()).isEqualByComparingTo("4.527177676");
     }
 }

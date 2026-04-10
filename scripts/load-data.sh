@@ -59,6 +59,7 @@ BONUSES_FILE=""
 TICKER_RENAMES_FILE=""
 ASSET_CONVERSIONS_FILE=""
 PROCESSES="all"
+PROCESSES_EXPLICIT=false
 
 print_usage() {
   cat <<EOF
@@ -125,6 +126,7 @@ if [ "$is_named_mode" = true ]; then
         ;;
       --processes)
         PROCESSES="${2:-}"
+        PROCESSES_EXPLICIT=true
         shift 2
         ;;
       -h|--help)
@@ -143,6 +145,20 @@ else
   SUBSCRIPTIONS_FILE="${2:-}"
   SPLITS_FILE="${3:-}"
   TICKER_RENAMES_FILE="${4:-}"
+fi
+
+if [ "$is_named_mode" = true ] && [ "$PROCESSES_EXPLICIT" = false ]; then
+  AUTO_PROCESSES=()
+  [ -n "$NOTES_DIR" ] && AUTO_PROCESSES+=("trading-notes")
+  [ -n "$SUBSCRIPTIONS_FILE" ] && AUTO_PROCESSES+=("subscriptions")
+  [ -n "$SPLITS_FILE" ] && AUTO_PROCESSES+=("splits")
+  [ -n "$BONUSES_FILE" ] && AUTO_PROCESSES+=("bonuses")
+  [ -n "$TICKER_RENAMES_FILE" ] && AUTO_PROCESSES+=("ticker-renames")
+  [ -n "$ASSET_CONVERSIONS_FILE" ] && AUTO_PROCESSES+=("asset-conversions")
+
+  if [ ${#AUTO_PROCESSES[@]} -gt 0 ]; then
+    PROCESSES=$(IFS=, ; echo "${AUTO_PROCESSES[*]}")
+  fi
 fi
 
 should_process() {

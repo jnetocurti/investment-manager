@@ -438,6 +438,56 @@ class AssetPositionServiceTest {
         assertThat(position.getTotalCost().toBigDecimal()).isEqualByComparingTo("1088.518914");
     }
 
+    @Test
+    void shouldCalculateBonusQuantityDuringProjectionBasedOnTimelineState() {
+        PositionImpactQueryPort impactQueryPort = mock(PositionImpactQueryPort.class);
+        AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
+        AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
+        BrokerCatalogQueryPort brokerCatalogQueryPort = mock(BrokerCatalogQueryPort.class);
+
+        when(brokerCatalogQueryPort.findByBrokerKey("BROKER_XP"))
+                .thenReturn(Optional.of(new BrokerCatalogQueryPort.BrokerDisplayData("XP", "12")));
+
+        AssetPositionService service = new AssetPositionService(
+                impactQueryPort,
+                positionRepository,
+                historyRepository,
+                brokerCatalogQueryPort);
+
+        List<PositionImpactData> impacts = List.of(
+                impact("buy-1", "BBDC3", PositionImpactType.INCREASE, 50, "10", "0",
+                        LocalDate.of(2021, 4, 1), 1),
+                PositionImpactData.builder()
+                        .originalEventId("bonus-1")
+                        .sequence(1)
+                        .ticker("BBDC3")
+                        .assetType(AssetType.STOCKS_BRL)
+                        .impactType(PositionImpactType.INCREASE)
+                        .quantity(1)
+                        .unitPrice(MonetaryValue.of("4.527177676"))
+                        .fee(MonetaryValue.zero())
+                        .factor(new BigDecimal("0.1"))
+                        .eventDate(LocalDate.of(2021, 4, 23))
+                        .originType("BONUS")
+                        .sourceType("CORPORATE_ACTION")
+                        .brokerKey("BROKER_XP")
+                        .sourceReferenceId("BONUS:BBDC3:2021-04-23:1:10")
+                        .createdAt(LocalDateTime.of(2021, 4, 23, 10, 0))
+                        .build());
+
+        when(impactQueryPort.findByTickerAndAssetTypeAndBrokerKey("BBDC3", AssetType.STOCKS_BRL, "BROKER_XP"))
+                .thenReturn(impacts);
+        when(positionRepository.findByAssetNameAndAssetTypeAndBrokerKey("BBDC3", AssetType.STOCKS_BRL, "BROKER_XP"))
+                .thenReturn(Optional.empty());
+        when(positionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var position = service.calculatePosition("BBDC3", AssetType.STOCKS_BRL, "BROKER_XP");
+
+        assertThat(position.getQuantity()).isEqualTo(55);
+        assertThat(position.getTotalCost().toBigDecimal()).isEqualByComparingTo("522.635888");
+        assertThat(position.getAveragePrice().toBigDecimal()).isEqualByComparingTo("9.502471");
+    }
+
     private PositionImpactData impact(String id,
                                       String ticker,
                                       PositionImpactType type,
