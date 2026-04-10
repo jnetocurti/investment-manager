@@ -34,13 +34,15 @@ public class PortfolioEventService implements CreatePortfolioEventsUseCase {
                         .build())
                 .getBrokerKey();
 
+        var eventDate = command.getSettlementDate() != null ? command.getSettlementDate() : command.getTradingDate();
+
         List<PortfolioEvent> events = command.getOperations().stream()
                 .map(op -> {
                     var detail = assetDetailResolver.resolve(op.getAssetDescription());
                     return PortfolioEvent.fromOperation(
                             command.getTradingNoteId(),
                             brokerKey,
-                            command.getTradingDate(),
+                            eventDate,
                             detail.ticker(),
                             detail.assetType(),
                             op.getOperationType(),
@@ -71,6 +73,8 @@ public class PortfolioEventService implements CreatePortfolioEventsUseCase {
             throw new IllegalArgumentException("Command is required");
         if (command.getTradingNoteId() == null || command.getTradingNoteId().isBlank())
             throw new IllegalArgumentException("Trading note ID is required");
+        if (command.getTradingDate() == null && command.getSettlementDate() == null)
+            throw new IllegalArgumentException("Trading date or settlement date is required");
         if (command.getOperations() == null || command.getOperations().isEmpty())
             throw new IllegalArgumentException("At least one operation is required");
     }
