@@ -13,6 +13,8 @@ public class PortfolioEventMetadata {
     private final String splitRatio;
     private final String oldTicker;
     private final String newTicker;
+    private final String bonusRatio;
+    private final Integer bonusBaseQuantity;
     private final BigDecimal splitFractionResidualBookValue;
     private final String splitFractionFlowStatus;
     private final String splitFractionSourceReferenceId;
@@ -33,6 +35,13 @@ public class PortfolioEventMetadata {
         return PortfolioEventMetadata.builder()
                 .oldTicker(oldTicker)
                 .newTicker(newTicker)
+                .build();
+    }
+
+    public static PortfolioEventMetadata bonus(String bonusRatio, Integer bonusBaseQuantity) {
+        return PortfolioEventMetadata.builder()
+                .bonusRatio(bonusRatio)
+                .bonusBaseQuantity(bonusBaseQuantity)
                 .build();
     }
 }

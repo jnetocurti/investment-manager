@@ -11,6 +11,7 @@
 #     --notes-dir ~/notas_negociacao \
 #     --subscriptions-file scripts/subscricoes-exemplo.json \
 #     --splits-file scripts/splits-exemplo.json \
+#     --bonuses-file scripts/bonificacoes-exemplo.json \
 #     --ticker-renames-file scripts/ticker-renames-exemplo.json \
 #     --asset-conversions-file scripts/asset-conversions-exemplo.json
 #
@@ -19,6 +20,7 @@
 #     --processes subscriptions,splits,asset-conversions \
 #     --subscriptions-file scripts/subscricoes-exemplo.json \
 #     --splits-file scripts/splits-exemplo.json \
+#     --bonuses-file scripts/bonificacoes-exemplo.json \
 #     --asset-conversions-file scripts/asset-conversions-exemplo.json
 #
 #   # Compatibilidade com chamada legada (ordem fixa)
@@ -53,9 +55,11 @@ DB_NAME="investmentmanager"
 NOTES_DIR=""
 SUBSCRIPTIONS_FILE=""
 SPLITS_FILE=""
+BONUSES_FILE=""
 TICKER_RENAMES_FILE=""
 ASSET_CONVERSIONS_FILE=""
 PROCESSES="all"
+PROCESSES_EXPLICIT=false
 
 print_usage() {
   cat <<EOF
@@ -66,10 +70,11 @@ Opções:
   --notes-dir <dir>                 Diretório com PDFs de notas de negociação
   --subscriptions-file <json>       JSON array para /api/subscriptions
   --splits-file <json>              JSON array para /api/splits
+  --bonuses-file <json>             JSON array para /api/bonuses
   --ticker-renames-file <json>      JSON array para /api/ticker-renames
   --asset-conversions-file <json>   JSON array para /api/asset-conversions
   --processes <lista>               Lista separada por vírgula:
-                                    trading-notes,subscriptions,splits,ticker-renames,asset-conversions,all
+                                    trading-notes,subscriptions,splits,bonuses,ticker-renames,asset-conversions,all
   -h, --help                        Exibe esta ajuda
 
 Compatibilidade legada:
@@ -85,7 +90,7 @@ fi
 
 for arg in "$@"; do
   case "$arg" in
-    --notes-dir|--subscriptions-file|--splits-file|--ticker-renames-file|--asset-conversions-file|--processes)
+    --notes-dir|--subscriptions-file|--splits-file|--bonuses-file|--ticker-renames-file|--asset-conversions-file|--processes)
       is_named_mode=true
       break
       ;;
@@ -107,6 +112,10 @@ if [ "$is_named_mode" = true ]; then
         SPLITS_FILE="${2:-}"
         shift 2
         ;;
+      --bonuses-file)
+        BONUSES_FILE="${2:-}"
+        shift 2
+        ;;
       --ticker-renames-file)
         TICKER_RENAMES_FILE="${2:-}"
         shift 2
@@ -117,6 +126,7 @@ if [ "$is_named_mode" = true ]; then
         ;;
       --processes)
         PROCESSES="${2:-}"
+        PROCESSES_EXPLICIT=true
         shift 2
         ;;
       -h|--help)
@@ -135,6 +145,20 @@ else
   SUBSCRIPTIONS_FILE="${2:-}"
   SPLITS_FILE="${3:-}"
   TICKER_RENAMES_FILE="${4:-}"
+fi
+
+if [ "$is_named_mode" = true ] && [ "$PROCESSES_EXPLICIT" = false ]; then
+  AUTO_PROCESSES=()
+  [ -n "$NOTES_DIR" ] && AUTO_PROCESSES+=("trading-notes")
+  [ -n "$SUBSCRIPTIONS_FILE" ] && AUTO_PROCESSES+=("subscriptions")
+  [ -n "$SPLITS_FILE" ] && AUTO_PROCESSES+=("splits")
+  [ -n "$BONUSES_FILE" ] && AUTO_PROCESSES+=("bonuses")
+  [ -n "$TICKER_RENAMES_FILE" ] && AUTO_PROCESSES+=("ticker-renames")
+  [ -n "$ASSET_CONVERSIONS_FILE" ] && AUTO_PROCESSES+=("asset-conversions")
+
+  if [ ${#AUTO_PROCESSES[@]} -gt 0 ]; then
+    PROCESSES=$(IFS=, ; echo "${AUTO_PROCESSES[*]}")
+  fi
 fi
 
 should_process() {
@@ -165,6 +189,11 @@ fi
 
 if should_process "splits" && [ -n "$SPLITS_FILE" ] && [ ! -f "$SPLITS_FILE" ]; then
   echo "Erro: arquivo de splits não encontrado: $SPLITS_FILE"
+  exit 1
+fi
+
+if should_process "bonuses" && [ -n "$BONUSES_FILE" ] && [ ! -f "$BONUSES_FILE" ]; then
+  echo "Erro: arquivo de bonificações não encontrado: $BONUSES_FILE"
   exit 1
 fi
 
@@ -338,6 +367,33 @@ with open('$SPLITS_FILE') as f:
   done
 
   echo "Splits processados."
+fi
+
+# --- 7. Trocas de ticker ---
+
+if should_process "bonuses" && [ -n "$BONUSES_FILE" ]; then
+  echo ""
+  echo "=== Enviando bonificações ==="
+
+  BONUS_COUNT=$(python3 -c "import json; print(len(json.load(open('$BONUSES_FILE'))))" 2>/dev/null || echo "0")
+  echo "Encontradas $BONUS_COUNT bonificações em $BONUSES_FILE"
+
+  python3 -c "
+import json
+with open('$BONUSES_FILE') as f:
+    for b in json.load(f):
+        print(json.dumps(b))
+" | while IFS= read -r bonus_json; do
+    STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API_BASE/api/bonuses" \
+      -H "Content-Type: application/json" \
+      -d "$bonus_json" 2>/dev/null)
+    if [ "$STATUS" != "200" ]; then
+      TICKER=$(echo "$bonus_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('targetTicker','?'))" 2>/dev/null)
+      echo "  FAIL ($STATUS): $TICKER"
+    fi
+  done
+
+  echo "Bonificações processadas."
 fi
 
 # --- 7. Trocas de ticker ---

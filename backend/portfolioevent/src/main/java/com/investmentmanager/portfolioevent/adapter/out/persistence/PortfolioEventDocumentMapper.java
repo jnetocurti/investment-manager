@@ -62,6 +62,8 @@ class PortfolioEventDocumentMapper {
         metadataDocument.setSplitRatio(metadata.getSplitRatio());
         metadataDocument.setOldTicker(metadata.getOldTicker());
         metadataDocument.setNewTicker(metadata.getNewTicker());
+        metadataDocument.setBonusRatio(metadata.getBonusRatio());
+        metadataDocument.setBonusBaseQuantity(metadata.getBonusBaseQuantity());
         metadataDocument.setSplitFractionResidualBookValue(metadata.getSplitFractionResidualBookValue());
         metadataDocument.setSplitFractionFlowStatus(metadata.getSplitFractionFlowStatus());
         metadataDocument.setSplitFractionSourceReferenceId(metadata.getSplitFractionSourceReferenceId());
@@ -77,6 +79,8 @@ class PortfolioEventDocumentMapper {
                 .splitRatio(metadataDocument.getSplitRatio())
                 .oldTicker(metadataDocument.getOldTicker())
                 .newTicker(metadataDocument.getNewTicker())
+                .bonusRatio(metadataDocument.getBonusRatio())
+                .bonusBaseQuantity(metadataDocument.getBonusBaseQuantity())
                 .splitFractionResidualBookValue(metadataDocument.getSplitFractionResidualBookValue())
                 .splitFractionFlowStatus(metadataDocument.getSplitFractionFlowStatus())
                 .splitFractionSourceReferenceId(metadataDocument.getSplitFractionSourceReferenceId())

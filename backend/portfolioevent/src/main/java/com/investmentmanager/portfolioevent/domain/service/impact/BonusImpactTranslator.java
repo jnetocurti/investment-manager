@@ -1,0 +1,44 @@
+package com.investmentmanager.portfolioevent.domain.service.impact;
+
+import com.investmentmanager.commons.domain.model.PositionImpactType;
+import com.investmentmanager.portfolioevent.domain.model.BonusRatio;
+import com.investmentmanager.portfolioevent.domain.model.EventType;
+import com.investmentmanager.portfolioevent.domain.model.ImpactSourceType;
+import com.investmentmanager.portfolioevent.domain.model.PortfolioEvent;
+import com.investmentmanager.portfolioevent.domain.model.PositionImpactEvent;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+public class BonusImpactTranslator implements PortfolioEventImpactTranslator {
+
+    @Override
+    public boolean supports(PortfolioEvent event) {
+        return EventType.BONUS.equals(event.getEventType());
+    }
+
+    @Override
+    public List<PositionImpactEvent> translate(PortfolioEvent event) {
+        String ratioValue = event.getMetadata() != null ? event.getMetadata().getBonusRatio() : null;
+        BonusRatio ratio = BonusRatio.parse(ratioValue);
+
+        return List.of(PositionImpactEvent.builder()
+                .originalEventId(event.getId())
+                .ticker(event.getAssetName())
+                .assetType(event.getAssetType())
+                .impactType(PositionImpactType.INCREASE)
+                .sequence(1)
+                .quantity(event.getQuantity())
+                .unitPrice(event.getUnitPrice())
+                .fee(event.getFee())
+                .factor(ratio.factor())
+                .eventDate(event.getEventDate())
+                .originType(event.getEventType())
+                .sourceType(ImpactSourceType.CORPORATE_ACTION)
+                .brokerKey(event.getBrokerKey())
+                .sourceReferenceId(event.getSourceReferenceId())
+                .schemaVersion(1)
+                .createdAt(LocalDateTime.now())
+                .build());
+    }
+}

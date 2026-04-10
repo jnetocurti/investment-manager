@@ -29,6 +29,7 @@ public class TradingNoteCreatedListener {
                     .brokerName(message.getBrokerName())
                     .brokerDocument(message.getBrokerDocument())
                     .tradingDate(message.getTradingDate())
+                    .settlementDate(message.getSettlementDate())
                     .currency(message.getCurrency())
                     .operations(message.getOperations().stream()
                             .map(op -> CreatePortfolioEventsCommand.OperationData.builder()

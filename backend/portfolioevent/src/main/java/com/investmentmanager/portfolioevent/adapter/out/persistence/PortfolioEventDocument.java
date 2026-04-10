@@ -47,6 +47,8 @@ public class PortfolioEventDocument {
         private String splitRatio;
         private String oldTicker;
         private String newTicker;
+        private String bonusRatio;
+        private Integer bonusBaseQuantity;
         private BigDecimal splitFractionResidualBookValue;
         private String splitFractionFlowStatus;
         private String splitFractionSourceReferenceId;
