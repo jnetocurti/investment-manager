@@ -17,6 +17,7 @@ class AssetPositionSnapshotDocument {
     private BigDecimal averagePrice;
     private BigDecimal totalCost;
     private LocalDate eventDate;
+    private Integer eventOrder;
     private String sourceType;
     private String sourceReferenceId;
     private String observation;

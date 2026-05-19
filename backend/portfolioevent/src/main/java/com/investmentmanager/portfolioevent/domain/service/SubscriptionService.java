@@ -47,6 +47,7 @@ public class SubscriptionService implements SubscriptionUseCase {
                 command.getSubscriptionDate(),
                 brokerKey,
                 sourceReferenceId,
+                null,
                 PortfolioEventMetadata.subscription(command.getSubscriptionTicker()));
 
         if (repository.existsByIdempotencyKey(subscription.getIdempotencyKey())) {
@@ -92,6 +93,7 @@ public class SubscriptionService implements SubscriptionUseCase {
                 conversionDate,
                 subscription.getBrokerKey(),
                 subscriptionEventId,
+                subscription.getEventOrder(),
                 subscription.getMetadata());
 
         if (repository.existsByIdempotencyKey(conversion.getIdempotencyKey())) {

@@ -1,0 +1,22 @@
+[
+  {
+    "targetTicker": "BBDC3",
+    "targetAssetType": "STOCKS_BRL",
+    "ratio": "1:10",
+    "unitPrice": 4.527177676,
+    "eventDate": "2021-04-23",
+    "brokerName": "NUINVEST",
+    "brokerDocument": "62.169.875/0001-79",
+    "currency": "BRL"
+  },
+  {
+    "targetTicker": "BBDC3",
+    "targetAssetType": "STOCKS_BRL",
+    "ratio": "1:10",
+    "unitPrice": 4.128165265,
+    "eventDate": "2022-04-20",
+    "brokerName": "NUINVEST",
+    "brokerDocument": "62.169.875/0001-79",
+    "currency": "BRL"
+  }
+]

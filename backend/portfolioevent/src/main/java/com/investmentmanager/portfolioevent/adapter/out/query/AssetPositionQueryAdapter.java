@@ -13,6 +13,7 @@ import java.util.Optional;
 class AssetPositionQueryAdapter implements AssetPositionQueryPort {
 
     private final AssetPositionQueryMongoRepository repository;
+    private final AssetPositionHistoryQueryMongoRepository historyRepository;
 
     @Override
     public Optional<AssetPositionData> findByAssetNameAndAssetTypeAndBrokerKey(
@@ -30,5 +31,15 @@ class AssetPositionQueryAdapter implements AssetPositionQueryPort {
                         doc.getQuantity(),
                         MonetaryValue.of(doc.getAveragePrice()),
                         MonetaryValue.of(doc.getTotalCost())));
+    }
+
+    @Override
+    public Optional<Integer> findQuantityAsOfDate(String assetName, String brokerKey, java.time.LocalDate asOfDate) {
+        return historyRepository
+                .findFirstByAssetNameAndBrokerKeyAndEventDateLessThanEqualOrderByEventDateDescEventOrderDescRecordedAtDesc(
+                        assetName,
+                        brokerKey,
+                        asOfDate)
+                .map(AssetPositionHistoryQueryDocument::getQuantity);
     }
 }

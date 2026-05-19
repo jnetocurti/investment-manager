@@ -31,6 +31,7 @@ public class PositionImpactData {
     private final String sourceType;
     private final String brokerKey;
     private final String sourceReferenceId;
+    private final Integer eventOrder;
     private final int schemaVersion;
     private final LocalDateTime createdAt;
 }

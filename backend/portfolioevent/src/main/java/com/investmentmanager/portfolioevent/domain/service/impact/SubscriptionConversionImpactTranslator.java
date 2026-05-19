@@ -33,6 +33,7 @@ public class SubscriptionConversionImpactTranslator implements PortfolioEventImp
                 .brokerKey(event.getBrokerKey())
                 
                 .sourceReferenceId(event.getSourceReferenceId())
+                .eventOrder(event.getEventOrder())
                 .schemaVersion(1)
                 .createdAt(LocalDateTime.now())
                 .build());

@@ -119,4 +119,36 @@ class PortfolioEventDocumentMapperTest {
         assertEquals("GETT11", mapped.getMetadata().getOldTicker());
         assertEquals("GGRC11", mapped.getMetadata().getNewTicker());
     }
+
+    @Test
+    void shouldMapBonusMetadataToDocumentAndBack() {
+        PortfolioEvent event = PortfolioEvent.builder()
+                .id("evt-bonus-1")
+                .eventType(EventType.BONUS)
+                .eventSource(EventSource.CORPORATE_ACTION)
+                .assetName("BBDC3")
+                .assetType(AssetType.STOCKS_BRL)
+                .quantity(5)
+                .unitPrice(MonetaryValue.of("4.527177676"))
+                .totalValue(MonetaryValue.of("22.635888380"))
+                .fee(MonetaryValue.zero())
+                .currency("BRL")
+                .eventDate(LocalDate.of(2021, 4, 23))
+                .brokerKey("BROKER_CLEAR")
+                .idempotencyKey("idempotency-bonus-1")
+                .sourceReferenceId("BONUS:BBDC3:2021-04-23:1:10")
+                .metadata(PortfolioEventMetadata.bonus("1:10", 50))
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        PortfolioEventDocument doc = PortfolioEventDocumentMapper.toDocument(event);
+        assertNotNull(doc.getMetadata());
+        assertEquals("1:10", doc.getMetadata().getBonusRatio());
+        assertEquals(50, doc.getMetadata().getBonusBaseQuantity());
+
+        PortfolioEvent mapped = PortfolioEventDocumentMapper.toDomain(doc);
+        assertNotNull(mapped.getMetadata());
+        assertEquals("1:10", mapped.getMetadata().getBonusRatio());
+        assertEquals(50, mapped.getMetadata().getBonusBaseQuantity());
+    }
 }

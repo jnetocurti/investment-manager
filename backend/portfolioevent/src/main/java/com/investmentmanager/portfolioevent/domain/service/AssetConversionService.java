@@ -82,6 +82,7 @@ public class AssetConversionService implements AssetConversionUseCase {
                 command.getEventDate(),
                 brokerKey,
                 sourceReferenceId,
+                null,
                 PortfolioEventMetadata.builder()
                         .oldTicker(oldTicker)
                         .newTicker(newTicker)

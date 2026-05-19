@@ -36,6 +36,7 @@ public class PositionImpactEventDocument {
     private String sourceType;
     private String brokerKey;
     private String sourceReferenceId;
+    private Integer eventOrder;
     private Integer schemaVersion;
     private LocalDateTime createdAt;
 }

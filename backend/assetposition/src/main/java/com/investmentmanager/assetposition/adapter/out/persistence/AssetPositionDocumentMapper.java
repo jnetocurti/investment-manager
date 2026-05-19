@@ -56,6 +56,7 @@ class AssetPositionDocumentMapper {
                 snapshot.getAveragePrice().toDisplayValue(),
                 snapshot.getTotalCost().toDisplayValue(),
                 snapshot.getEventDate(),
+                snapshot.getEventOrder(),
                 snapshot.getSourceType(),
                 snapshot.getSourceReferenceId(),
                 snapshot.getObservation(),
@@ -68,6 +69,7 @@ class AssetPositionDocumentMapper {
                 .averagePrice(MonetaryValue.of(doc.getAveragePrice()))
                 .totalCost(MonetaryValue.of(doc.getTotalCost()))
                 .eventDate(doc.getEventDate())
+                .eventOrder(doc.getEventOrder())
                 .sourceType(doc.getSourceType())
                 .sourceReferenceId(doc.getSourceReferenceId())
                 .observation(doc.getObservation())

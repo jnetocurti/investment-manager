@@ -19,6 +19,7 @@ public class AssetPositionSnapshot {
     private final MonetaryValue averagePrice;
     private final MonetaryValue totalCost;
     private final LocalDate eventDate;
+    private final Integer eventOrder;
     private final String sourceType;
     private final String sourceReferenceId;
     private final String observation;

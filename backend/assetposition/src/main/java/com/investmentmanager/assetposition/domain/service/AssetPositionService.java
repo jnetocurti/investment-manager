@@ -76,6 +76,7 @@ public class AssetPositionService implements CalculateAssetPositionUseCase {
                     .averagePrice(state.getAveragePrice())
                     .totalCost(state.getTotalCost())
                     .eventDate(impact.getEventDate())
+                    .eventOrder(impact.getEventOrder() != null ? impact.getEventOrder() : 1)
                     .sourceType(impact.getSourceType())
                     .sourceReferenceId(impact.getSourceReferenceId() != null ? impact.getSourceReferenceId()
                             : impact.getOriginalEventId() + ":" + impact.getSequence())

@@ -42,6 +42,7 @@ public class SplitImpactTranslator implements PortfolioEventImpactTranslator {
                 .sourceType(ImpactSourceType.CORPORATE_ACTION)
                 .brokerKey(event.getBrokerKey())
                 .sourceReferenceId(event.getSourceReferenceId())
+                .eventOrder(event.getEventOrder())
                 .schemaVersion(1)
                 .createdAt(LocalDateTime.now())
                 .build());

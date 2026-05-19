@@ -23,6 +23,7 @@ class AssetPositionHistoryPersistenceAdapter implements AssetPositionHistoryRepo
             doc.setAveragePrice(snapshot.getAveragePrice().toDisplayValue());
             doc.setTotalCost(snapshot.getTotalCost().toDisplayValue());
             doc.setEventDate(snapshot.getEventDate());
+            doc.setEventOrder(snapshot.getEventOrder());
             doc.setSourceType(snapshot.getSourceType());
             doc.setSourceReferenceId(snapshot.getSourceReferenceId());
             doc.setObservation(snapshot.getObservation());
