@@ -12,5 +12,6 @@ public enum EventType {
     SPLIT,
     BONUS,
     TICKER_RENAME,
-    ASSET_CONVERSION
+    ASSET_CONVERSION,
+    GENERIC_CORPORATE_ACTION
 }

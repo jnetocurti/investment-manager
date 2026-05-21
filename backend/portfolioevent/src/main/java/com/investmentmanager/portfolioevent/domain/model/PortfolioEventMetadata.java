@@ -1,6 +1,7 @@
 package com.investmentmanager.portfolioevent.domain.model;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -18,6 +19,19 @@ public class PortfolioEventMetadata {
     private final BigDecimal splitFractionResidualBookValue;
     private final String splitFractionFlowStatus;
     private final String splitFractionSourceReferenceId;
+    private final String genericObservation;
+    private final List<GenericAssetSnapshot> genericAssets;
+    private final BigDecimal genericResidualAmount;
+    private final String genericResidualDescription;
+
+    @Getter
+    @Builder(toBuilder = true)
+    public static class GenericAssetSnapshot {
+        private final String ticker;
+        private final String assetType;
+        private final Integer quantity;
+        private final BigDecimal averagePrice;
+    }
 
     public static PortfolioEventMetadata subscription(String subscriptionTicker) {
         return PortfolioEventMetadata.builder()

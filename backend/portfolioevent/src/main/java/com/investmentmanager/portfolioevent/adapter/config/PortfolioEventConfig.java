@@ -1,32 +1,17 @@
 package com.investmentmanager.portfolioevent.adapter.config;
 
+import com.investmentmanager.portfolioevent.domain.port.in.AssetConversionUseCase;
+import com.investmentmanager.portfolioevent.domain.port.in.BonusUseCase;
+import com.investmentmanager.portfolioevent.domain.port.in.GenericCorporateActionUseCase;
+import com.investmentmanager.portfolioevent.domain.port.in.TickerRenameUseCase;
 import com.investmentmanager.portfolioevent.domain.port.out.AssetDetailResolverPort;
 import com.investmentmanager.portfolioevent.domain.port.out.AssetPositionQueryPort;
 import com.investmentmanager.portfolioevent.domain.port.out.BrokerCatalogRepositoryPort;
 import com.investmentmanager.portfolioevent.domain.port.out.PortfolioEventRepositoryPort;
 import com.investmentmanager.portfolioevent.domain.port.out.PositionImpactEventPublisherPort;
 import com.investmentmanager.portfolioevent.domain.port.out.PositionImpactEventRepositoryPort;
-import com.investmentmanager.portfolioevent.domain.service.CanonicalBrokerResolver;
-import com.investmentmanager.portfolioevent.domain.service.PortfolioEventService;
-import com.investmentmanager.portfolioevent.domain.service.PositionImpactGenerationService;
-import com.investmentmanager.portfolioevent.domain.service.BonusService;
-import com.investmentmanager.portfolioevent.domain.service.SubscriptionService;
-import com.investmentmanager.portfolioevent.domain.service.impact.BuyEventImpactTranslator;
-import com.investmentmanager.portfolioevent.domain.service.impact.AssetConversionImpactTranslator;
-import com.investmentmanager.portfolioevent.domain.service.impact.BonusImpactTranslator;
-import com.investmentmanager.portfolioevent.domain.service.impact.PortfolioEventImpactTranslator;
-import com.investmentmanager.portfolioevent.domain.service.impact.PositionImpactTranslatorRegistry;
-import com.investmentmanager.portfolioevent.domain.service.impact.SellEventImpactTranslator;
-import com.investmentmanager.portfolioevent.domain.service.impact.SplitImpactTranslator;
-import com.investmentmanager.portfolioevent.domain.service.impact.TickerRenameImpactTranslator;
-import com.investmentmanager.portfolioevent.domain.service.impact.SubscriptionConversionImpactTranslator;
-import com.investmentmanager.portfolioevent.domain.service.impact.SubscriptionPendingImpactTranslator;
-import com.investmentmanager.portfolioevent.domain.service.SplitService;
-import com.investmentmanager.portfolioevent.domain.service.TickerRenameService;
-import com.investmentmanager.portfolioevent.domain.service.AssetConversionService;
-import com.investmentmanager.portfolioevent.domain.port.in.AssetConversionUseCase;
-import com.investmentmanager.portfolioevent.domain.port.in.BonusUseCase;
-import com.investmentmanager.portfolioevent.domain.port.in.TickerRenameUseCase;
+import com.investmentmanager.portfolioevent.domain.service.*;
+import com.investmentmanager.portfolioevent.domain.service.impact.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -39,46 +24,15 @@ public class PortfolioEventConfig {
     public CanonicalBrokerResolver canonicalBrokerResolver(BrokerCatalogRepositoryPort brokerCatalogRepositoryPort) {
         return new CanonicalBrokerResolver(brokerCatalogRepositoryPort);
     }
-
-    @Bean
-    public BuyEventImpactTranslator buyEventImpactTranslator() {
-        return new BuyEventImpactTranslator();
-    }
-
-    @Bean
-    public SellEventImpactTranslator sellEventImpactTranslator() {
-        return new SellEventImpactTranslator();
-    }
-
-    @Bean
-    public SubscriptionPendingImpactTranslator subscriptionPendingImpactTranslator() {
-        return new SubscriptionPendingImpactTranslator();
-    }
-
-    @Bean
-    public SubscriptionConversionImpactTranslator subscriptionConversionImpactTranslator() {
-        return new SubscriptionConversionImpactTranslator();
-    }
-
-    @Bean
-    public SplitImpactTranslator splitImpactTranslator() {
-        return new SplitImpactTranslator();
-    }
-
-    @Bean
-    public BonusImpactTranslator bonusImpactTranslator() {
-        return new BonusImpactTranslator();
-    }
-
-    @Bean
-    public TickerRenameImpactTranslator tickerRenameImpactTranslator() {
-        return new TickerRenameImpactTranslator();
-    }
-
-    @Bean
-    public AssetConversionImpactTranslator assetConversionImpactTranslator() {
-        return new AssetConversionImpactTranslator();
-    }
+    @Bean public BuyEventImpactTranslator buyEventImpactTranslator(){return new BuyEventImpactTranslator();}
+    @Bean public SellEventImpactTranslator sellEventImpactTranslator(){return new SellEventImpactTranslator();}
+    @Bean public SubscriptionPendingImpactTranslator subscriptionPendingImpactTranslator(){return new SubscriptionPendingImpactTranslator();}
+    @Bean public SubscriptionConversionImpactTranslator subscriptionConversionImpactTranslator(){return new SubscriptionConversionImpactTranslator();}
+    @Bean public SplitImpactTranslator splitImpactTranslator(){return new SplitImpactTranslator();}
+    @Bean public BonusImpactTranslator bonusImpactTranslator(){return new BonusImpactTranslator();}
+    @Bean public TickerRenameImpactTranslator tickerRenameImpactTranslator(){return new TickerRenameImpactTranslator();}
+    @Bean public AssetConversionImpactTranslator assetConversionImpactTranslator(){return new AssetConversionImpactTranslator();}
+    @Bean public GenericCorporateActionImpactTranslator genericCorporateActionImpactTranslator(){return new GenericCorporateActionImpactTranslator();}
 
     @Bean
     public PositionImpactTranslatorRegistry positionImpactTranslatorRegistry(
@@ -89,16 +43,12 @@ public class PortfolioEventConfig {
             SplitImpactTranslator splitImpactTranslator,
             BonusImpactTranslator bonusImpactTranslator,
             TickerRenameImpactTranslator tickerRenameImpactTranslator,
-            AssetConversionImpactTranslator assetConversionImpactTranslator) {
+            AssetConversionImpactTranslator assetConversionImpactTranslator,
+            GenericCorporateActionImpactTranslator genericCorporateActionImpactTranslator) {
         return new PositionImpactTranslatorRegistry(List.<PortfolioEventImpactTranslator>of(
-                buyTranslator,
-                sellTranslator,
-                pendingTranslator,
-                conversionTranslator,
-                splitImpactTranslator,
-                bonusImpactTranslator,
-                tickerRenameImpactTranslator,
-                assetConversionImpactTranslator));
+                buyTranslator, sellTranslator, pendingTranslator, conversionTranslator,
+                splitImpactTranslator, bonusImpactTranslator, tickerRenameImpactTranslator,
+                assetConversionImpactTranslator, genericCorporateActionImpactTranslator));
     }
 
     @Bean
@@ -118,46 +68,10 @@ public class PortfolioEventConfig {
         return new PortfolioEventService(repository, assetDetailResolver, impactGenerationService, canonicalBrokerResolver);
     }
 
-    @Bean
-    public SubscriptionService subscriptionService(
-            PortfolioEventRepositoryPort repository,
-            PositionImpactGenerationService impactGenerationService,
-            CanonicalBrokerResolver canonicalBrokerResolver) {
-        return new SubscriptionService(repository, impactGenerationService, canonicalBrokerResolver);
-    }
-
-    @Bean
-    public SplitService splitService(
-            PortfolioEventRepositoryPort repository,
-            PositionImpactGenerationService impactGenerationService,
-            CanonicalBrokerResolver canonicalBrokerResolver) {
-        return new SplitService(repository, impactGenerationService, canonicalBrokerResolver);
-    }
-
-    @Bean
-    public BonusUseCase bonusUseCase(
-            PortfolioEventRepositoryPort repository,
-            PositionImpactGenerationService impactGenerationService,
-            CanonicalBrokerResolver canonicalBrokerResolver,
-            AssetPositionQueryPort assetPositionQueryPort) {
-        return new BonusService(repository, impactGenerationService, canonicalBrokerResolver, assetPositionQueryPort);
-    }
-
-    @Bean
-    public TickerRenameUseCase tickerRenameUseCase(
-            PortfolioEventRepositoryPort repository,
-            PositionImpactGenerationService impactGenerationService,
-            CanonicalBrokerResolver canonicalBrokerResolver,
-            AssetPositionQueryPort assetPositionQueryPort) {
-        return new TickerRenameService(repository, impactGenerationService, canonicalBrokerResolver, assetPositionQueryPort);
-    }
-
-    @Bean
-    public AssetConversionUseCase assetConversionUseCase(
-            PortfolioEventRepositoryPort repository,
-            PositionImpactGenerationService impactGenerationService,
-            CanonicalBrokerResolver canonicalBrokerResolver,
-            AssetPositionQueryPort assetPositionQueryPort) {
-        return new AssetConversionService(repository, impactGenerationService, canonicalBrokerResolver, assetPositionQueryPort);
-    }
+    @Bean public SubscriptionService subscriptionService(PortfolioEventRepositoryPort repository, PositionImpactGenerationService impactGenerationService, CanonicalBrokerResolver canonicalBrokerResolver){return new SubscriptionService(repository, impactGenerationService, canonicalBrokerResolver);}
+    @Bean public SplitService splitService(PortfolioEventRepositoryPort repository, PositionImpactGenerationService impactGenerationService, CanonicalBrokerResolver canonicalBrokerResolver){return new SplitService(repository, impactGenerationService, canonicalBrokerResolver);}
+    @Bean public BonusUseCase bonusUseCase(PortfolioEventRepositoryPort repository, PositionImpactGenerationService impactGenerationService, CanonicalBrokerResolver canonicalBrokerResolver, AssetPositionQueryPort assetPositionQueryPort){return new BonusService(repository, impactGenerationService, canonicalBrokerResolver, assetPositionQueryPort);}
+    @Bean public TickerRenameUseCase tickerRenameUseCase(PortfolioEventRepositoryPort repository, PositionImpactGenerationService impactGenerationService, CanonicalBrokerResolver canonicalBrokerResolver, AssetPositionQueryPort assetPositionQueryPort){return new TickerRenameService(repository, impactGenerationService, canonicalBrokerResolver, assetPositionQueryPort);}
+    @Bean public AssetConversionUseCase assetConversionUseCase(PortfolioEventRepositoryPort repository, PositionImpactGenerationService impactGenerationService, CanonicalBrokerResolver canonicalBrokerResolver, AssetPositionQueryPort assetPositionQueryPort){return new AssetConversionService(repository, impactGenerationService, canonicalBrokerResolver, assetPositionQueryPort);}
+    @Bean public GenericCorporateActionUseCase genericCorporateActionUseCase(PortfolioEventRepositoryPort repository, PositionImpactGenerationService impactGenerationService, CanonicalBrokerResolver canonicalBrokerResolver){return new GenericCorporateActionService(repository, impactGenerationService, canonicalBrokerResolver);}
 }

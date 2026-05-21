@@ -9,6 +9,8 @@ import com.investmentmanager.portfolioevent.domain.model.PortfolioEventMetadata;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 class PortfolioEventDocumentMapper {
 
@@ -69,6 +71,18 @@ class PortfolioEventDocumentMapper {
         metadataDocument.setSplitFractionResidualBookValue(metadata.getSplitFractionResidualBookValue());
         metadataDocument.setSplitFractionFlowStatus(metadata.getSplitFractionFlowStatus());
         metadataDocument.setSplitFractionSourceReferenceId(metadata.getSplitFractionSourceReferenceId());
+        metadataDocument.setGenericObservation(metadata.getGenericObservation());
+        metadataDocument.setGenericAssets(metadata.getGenericAssets() == null ? null : metadata.getGenericAssets().stream()
+                .map(asset -> {
+                    var doc = new PortfolioEventDocument.GenericAssetSnapshotDocument();
+                    doc.setTicker(asset.getTicker());
+                    doc.setAssetType(asset.getAssetType());
+                    doc.setQuantity(asset.getQuantity());
+                    doc.setAveragePrice(asset.getAveragePrice());
+                    return doc;
+                }).toList());
+        metadataDocument.setGenericResidualAmount(metadata.getGenericResidualAmount());
+        metadataDocument.setGenericResidualDescription(metadata.getGenericResidualDescription());
         return metadataDocument;
     }
 
@@ -86,6 +100,17 @@ class PortfolioEventDocumentMapper {
                 .splitFractionResidualBookValue(metadataDocument.getSplitFractionResidualBookValue())
                 .splitFractionFlowStatus(metadataDocument.getSplitFractionFlowStatus())
                 .splitFractionSourceReferenceId(metadataDocument.getSplitFractionSourceReferenceId())
+                .genericObservation(metadataDocument.getGenericObservation())
+                .genericAssets(metadataDocument.getGenericAssets() == null ? null : metadataDocument.getGenericAssets().stream()
+                        .map(asset -> PortfolioEventMetadata.GenericAssetSnapshot.builder()
+                                .ticker(asset.getTicker())
+                                .assetType(asset.getAssetType())
+                                .quantity(asset.getQuantity())
+                                .averagePrice(asset.getAveragePrice())
+                                .build())
+                        .toList())
+                .genericResidualAmount(metadataDocument.getGenericResidualAmount())
+                .genericResidualDescription(metadataDocument.getGenericResidualDescription())
                 .build();
     }
 }
