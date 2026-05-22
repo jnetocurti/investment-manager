@@ -1,0 +1,40 @@
+[
+  {
+    "eventDate": "2022-05-05",
+    "brokerName": "NUINVEST",
+    "brokerDocument": "62.169.875/0001-79",
+    "currency": "BRL",
+    "observation": "Cortesia recebida da instituição sem operação de compra para inclusão manual e rastreável na carteira.",
+    "targetAsset": {
+      "ticker": "ROXO34",
+      "assetType": "STOCKS_BRL",
+      "quantity": 1,
+      "averagePrice": 6.28
+    }
+  },
+  {
+    "eventDate": "2024-04-16",
+    "brokerName": "NUINVEST",
+    "brokerDocument": "62.169.875/0001-79",
+    "currency": "BRL",
+    "observation": "Evento excepcional de cisão com ajuste manual explícito de quantidades e preços médios incluindo residual financeiro.",
+    "targetAsset": {
+      "ticker": "BRCR11",
+      "assetType": "REAL_ESTATE_FUND_BRL",
+      "quantity": 88,
+      "averagePrice": 80.2655242
+    },
+    "derivedAssets": [
+      {
+        "ticker": "CNES11",
+        "assetType": "REAL_ESTATE_FUND_BRL",
+        "quantity": 88,
+        "averagePrice": 7.736961
+      }
+    ],
+    "residual": {
+      "amount": 68.03,
+      "description": "Residual financeiro a receber do evento de cisão"
+    }
+  }
+]
