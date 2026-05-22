@@ -11,11 +11,9 @@ import com.investmentmanager.portfolioevent.domain.port.out.PortfolioEventReposi
 import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.ArrayList;
-import java.util.HexFormat;
 import java.util.List;
+import java.util.Locale;
 
 @RequiredArgsConstructor
 public class GenericCorporateActionService implements GenericCorporateActionUseCase {
@@ -36,7 +34,7 @@ public class GenericCorporateActionService implements GenericCorporateActionUseC
                 .getBrokerKey();
 
         var assets = collectAssets(command);
-        String sourceReferenceId = buildSourceReference(command, brokerKey, assets);
+        String sourceReferenceId = buildSourceReference(command, assets);
         String targetTicker = command.getTargetAsset() != null ? command.getTargetAsset().getTicker() : assets.getFirst().getTicker();
         var targetType = command.getTargetAsset() != null ? command.getTargetAsset().getAssetType() : assets.getFirst().getAssetType();
 
@@ -83,16 +81,13 @@ public class GenericCorporateActionService implements GenericCorporateActionUseC
     }
 
     private String buildSourceReference(CreateGenericCorporateActionCommand command,
-                                        String brokerKey,
                                         List<CreateGenericCorporateActionCommand.AssetTarget> assets) {
-        String canonical = command.getEventDate() + "|" + brokerKey + "|" + command.getObservation().trim() + "|" + assets;
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            String hash = HexFormat.of().formatHex(digest.digest(canonical.getBytes(StandardCharsets.UTF_8))).substring(0, 24);
-            return "GENERIC_CA:" + hash;
-        } catch (Exception e) {
-            throw new IllegalStateException("Erro ao gerar sourceReferenceId determinístico", e);
-        }
+        String baseTicker = command.getTargetAsset() != null
+                ? command.getTargetAsset().getTicker()
+                : assets.getFirst().getTicker();
+        return "GENERIC_CA:%s:%s".formatted(
+                baseTicker.trim().toUpperCase(Locale.ROOT),
+                command.getEventDate());
     }
 
     private void validate(CreateGenericCorporateActionCommand command) {

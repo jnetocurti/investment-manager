@@ -37,7 +37,14 @@ public class GenericCorporateActionController {
                             .description(request.residual().description())
                             .build())
                     .build());
-            return ResponseEntity.ok(created.getId());
+            return ResponseEntity.ok(new CreateResponse(
+                    created.getId(),
+                    created.getEventType().name(),
+                    created.getAssetName(),
+                    created.getAssetType() != null ? created.getAssetType().name() : null,
+                    created.getBrokerKey(),
+                    created.getEventDate(),
+                    created.getSourceReferenceId()));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (IllegalStateException e) {
@@ -62,4 +69,14 @@ public class GenericCorporateActionController {
     record AssetPayload(String ticker, String assetType, Integer quantity, java.math.BigDecimal averagePrice) {}
 
     record ResidualPayload(java.math.BigDecimal amount, String description) {}
+
+    record CreateResponse(
+            String id,
+            String eventType,
+            String targetTicker,
+            String targetAssetType,
+            String brokerKey,
+            LocalDate eventDate,
+            String sourceReferenceId
+    ) {}
 }

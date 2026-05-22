@@ -47,6 +47,7 @@ class GenericCorporateActionServiceTest {
         assertNotNull(event);
         assertEquals("GENERIC_CORPORATE_ACTION", event.getEventType().name());
         assertEquals(2, event.getMetadata().getGenericAssets().size());
+        assertEquals("GENERIC_CA:BRCR11:2024-04-16", event.getSourceReferenceId());
     }
 
     @Test
