@@ -22,8 +22,8 @@ public class PositionImpactEventDocumentMapper {
         doc.setImpactType(event.getImpactType().name());
         doc.setSequence(event.getSequence());
         doc.setQuantity(event.getQuantity());
-        doc.setUnitPrice(event.getUnitPrice() != null ? event.getUnitPrice().toDisplayValue() : null);
-        doc.setFee(event.getFee() != null ? event.getFee().toDisplayValue() : null);
+        doc.setUnitPrice(event.getUnitPrice() != null ? event.getUnitPrice().toBigDecimal() : null);
+        doc.setFee(event.getFee() != null ? event.getFee().toBigDecimal() : null);
         doc.setFactor(event.getFactor());
         doc.setAdjustmentType(event.getAdjustmentType() != null ? event.getAdjustmentType().name() : null);
         doc.setEventDate(event.getEventDate());

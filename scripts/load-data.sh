@@ -13,7 +13,8 @@
 #     --splits-file scripts/splits-exemplo.json \
 #     --bonuses-file scripts/bonificacoes-exemplo.json \
 #     --ticker-renames-file scripts/ticker-renames-exemplo.json \
-#     --asset-conversions-file scripts/asset-conversions-exemplo.json
+#     --asset-conversions-file scripts/asset-conversions-exemplo.json \
+#     --generic-corporate-actions-file scripts/generic-corporate-actions-exemplo.json
 #
 #   # Apenas eventos corporativos (sem upload de notas)
 #   ./scripts/load-data.sh \
@@ -21,7 +22,8 @@
 #     --subscriptions-file scripts/subscricoes-exemplo.json \
 #     --splits-file scripts/splits-exemplo.json \
 #     --bonuses-file scripts/bonificacoes-exemplo.json \
-#     --asset-conversions-file scripts/asset-conversions-exemplo.json
+#     --asset-conversions-file scripts/asset-conversions-exemplo.json \
+#     --generic-corporate-actions-file scripts/generic-corporate-actions-exemplo.json
 #
 #   # Compatibilidade com chamada legada (ordem fixa)
 #   ./scripts/load-data.sh <diretório-notas> [arquivo-subscricoes.json] [arquivo-splits.json] [arquivo-ticker-renames.json]
@@ -58,6 +60,7 @@ SPLITS_FILE=""
 BONUSES_FILE=""
 TICKER_RENAMES_FILE=""
 ASSET_CONVERSIONS_FILE=""
+GENERIC_CORPORATE_ACTIONS_FILE=""
 PROCESSES="all"
 PROCESSES_EXPLICIT=false
 
@@ -73,8 +76,9 @@ Opções:
   --bonuses-file <json>             JSON array para /api/bonuses
   --ticker-renames-file <json>      JSON array para /api/ticker-renames
   --asset-conversions-file <json>   JSON array para /api/asset-conversions
+  --generic-corporate-actions-file <json> JSON array para /api/generic-corporate-actions
   --processes <lista>               Lista separada por vírgula:
-                                    trading-notes,subscriptions,splits,bonuses,ticker-renames,asset-conversions,all
+                                    trading-notes,subscriptions,splits,bonuses,ticker-renames,asset-conversions,generic-corporate-actions,all
   -h, --help                        Exibe esta ajuda
 
 Compatibilidade legada:
@@ -90,7 +94,7 @@ fi
 
 for arg in "$@"; do
   case "$arg" in
-    --notes-dir|--subscriptions-file|--splits-file|--bonuses-file|--ticker-renames-file|--asset-conversions-file|--processes)
+    --notes-dir|--subscriptions-file|--splits-file|--bonuses-file|--ticker-renames-file|--asset-conversions-file|--generic-corporate-actions-file|--processes)
       is_named_mode=true
       break
       ;;
@@ -124,6 +128,10 @@ if [ "$is_named_mode" = true ]; then
         ASSET_CONVERSIONS_FILE="${2:-}"
         shift 2
         ;;
+      --generic-corporate-actions-file)
+        GENERIC_CORPORATE_ACTIONS_FILE="${2:-}"
+        shift 2
+        ;;
       --processes)
         PROCESSES="${2:-}"
         PROCESSES_EXPLICIT=true
@@ -155,6 +163,7 @@ if [ "$is_named_mode" = true ] && [ "$PROCESSES_EXPLICIT" = false ]; then
   [ -n "$BONUSES_FILE" ] && AUTO_PROCESSES+=("bonuses")
   [ -n "$TICKER_RENAMES_FILE" ] && AUTO_PROCESSES+=("ticker-renames")
   [ -n "$ASSET_CONVERSIONS_FILE" ] && AUTO_PROCESSES+=("asset-conversions")
+  [ -n "$GENERIC_CORPORATE_ACTIONS_FILE" ] && AUTO_PROCESSES+=("generic-corporate-actions")
 
   if [ ${#AUTO_PROCESSES[@]} -gt 0 ]; then
     PROCESSES=$(IFS=, ; echo "${AUTO_PROCESSES[*]}")
@@ -204,6 +213,12 @@ fi
 
 if should_process "asset-conversions" && [ -n "$ASSET_CONVERSIONS_FILE" ] && [ ! -f "$ASSET_CONVERSIONS_FILE" ]; then
   echo "Erro: arquivo de conversões de ativo não encontrado: $ASSET_CONVERSIONS_FILE"
+  exit 1
+fi
+
+
+if should_process "generic-corporate-actions" && [ -n "$GENERIC_CORPORATE_ACTIONS_FILE" ] && [ ! -f "$GENERIC_CORPORATE_ACTIONS_FILE" ]; then
+  echo "Erro: arquivo de eventos corporativos genéricos não encontrado: $GENERIC_CORPORATE_ACTIONS_FILE"
   exit 1
 fi
 
@@ -452,13 +467,41 @@ with open('$ASSET_CONVERSIONS_FILE') as f:
   echo "Conversões/incorporações processadas."
 fi
 
-# --- 9. Aguardar processamento assíncrono ---
+
+# --- 9. Eventos corporativos genéricos ---
+
+if should_process "generic-corporate-actions" && [ -n "$GENERIC_CORPORATE_ACTIONS_FILE" ]; then
+  echo ""
+  echo "=== Enviando eventos corporativos genéricos ==="
+
+  GEN_COUNT=$(python3 -c "import json; print(len(json.load(open('$GENERIC_CORPORATE_ACTIONS_FILE'))))" 2>/dev/null || echo "0")
+  echo "Encontrados $GEN_COUNT eventos em $GENERIC_CORPORATE_ACTIONS_FILE"
+
+  python3 -c "
+import json
+with open('$GENERIC_CORPORATE_ACTIONS_FILE') as f:
+    for c in json.load(f):
+        print(json.dumps(c))
+" | while IFS= read -r generic_json; do
+    STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API_BASE/api/generic-corporate-actions" \
+      -H "Content-Type: application/json" \
+      -d "$generic_json" 2>/dev/null)
+    if [ "$STATUS" != "200" ]; then
+      TARGET=$(echo "$generic_json" | python3 -c "import json,sys; p=json.load(sys.stdin); print((p.get('targetAsset') or {}).get('ticker','?'))" 2>/dev/null)
+      echo "  FAIL ($STATUS): $TARGET"
+    fi
+  done
+
+  echo "Eventos corporativos genéricos processados."
+fi
+
+# --- 10. Aguardar processamento assíncrono ---
 
 echo ""
 echo "=== Aguardando processamento assíncrono ==="
 sleep 10
 
-# --- 10. Resultado ---
+# --- 11. Resultado ---
 
 echo ""
 echo "=== Resultado ==="
@@ -496,3 +539,4 @@ fi
 echo ""
 echo "Para testar replay completo: ./scripts/replay-position-impacts.sh"
 echo "Carga completa."
+

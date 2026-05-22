@@ -10,6 +10,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Document(collection = "portfolio_events")
@@ -53,5 +54,17 @@ public class PortfolioEventDocument {
         private BigDecimal splitFractionResidualBookValue;
         private String splitFractionFlowStatus;
         private String splitFractionSourceReferenceId;
+        private String genericObservation;
+        private List<GenericAssetSnapshotDocument> genericAssets;
+        private BigDecimal genericResidualAmount;
+        private String genericResidualDescription;
+    }
+
+    @Data
+    public static class GenericAssetSnapshotDocument {
+        private String ticker;
+        private String assetType;
+        private Integer quantity;
+        private BigDecimal averagePrice;
     }
 }
