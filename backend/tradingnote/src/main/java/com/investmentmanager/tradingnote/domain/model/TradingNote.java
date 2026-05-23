@@ -11,18 +11,12 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 
-/**
- * Aggregate root que representa uma nota de corretagem.
- *
- * <p>Duas formas de construção:</p>
- * <ul>
- *   <li><b>Parse do PDF (netOperations = null):</b> calcula netOperations, totalFees e rateia taxas nas operações.</li>
- *   <li><b>Reconstituição do banco (netOperations != null):</b> usa os valores já persistidos sem recalcular.</li>
- * </ul>
- */
 @Getter
 public class TradingNote {
+
+    private static final String IRRF_NORMALIZED = "IRRF";
 
     private final String id;
     private final String noteNumber;
@@ -34,6 +28,7 @@ public class TradingNote {
     private final MonetaryValue totalNote;
     private final MonetaryValue netOperations;
     private final MonetaryValue totalFees;
+    private final MonetaryValue withholdingTaxesTotal;
     private final String fileReference;
     private final String fileHash;
     private final String currency;
@@ -43,7 +38,8 @@ public class TradingNote {
                         LocalDate tradingDate, LocalDate settlementDate,
                         List<Operation> operations, List<Fee> fees,
                         MonetaryValue totalNote, MonetaryValue netOperations,
-                        MonetaryValue totalFees, String fileReference, String fileHash,
+                        MonetaryValue totalFees, MonetaryValue withholdingTaxesTotal,
+                        String fileReference, String fileHash,
                         String currency) {
         this.id = id;
         this.noteNumber = noteNumber;
@@ -56,25 +52,28 @@ public class TradingNote {
         this.currency = currency != null ? currency : "BRL";
         this.totalNote = totalNote;
 
-        // Reconstituição do banco: valores já calculados, não recalcular
         if (netOperations != null) {
             this.netOperations = netOperations;
             this.totalFees = totalFees;
+            this.withholdingTaxesTotal = withholdingTaxesTotal != null ? withholdingTaxesTotal : MonetaryValue.zero();
             this.operations = operations;
         } else {
-            // Parse do PDF: calcular valores derivados
             this.netOperations = operations.stream()
                     .map(Operation::getTotalValue)
                     .reduce(MonetaryValue.zero(), MonetaryValue::add);
 
-            // totalFees vem da soma das taxas extraídas do PDF (fonte de verdade).
-            // Fallback para |totalNote - netOperations| apenas se não houver taxas extraídas.
-            // A soma das fees é preferível porque a fórmula de fallback falha em notas
-            // mistas (compra + venda), onde totalNote é o saldo líquido e não a soma bruta.
-            this.totalFees = fees != null && !fees.isEmpty()
+            MonetaryValue totalExtractedFees = fees != null && !fees.isEmpty()
                     ? fees.stream().map(Fee::getValue).reduce(MonetaryValue.zero(), MonetaryValue::add)
                     : this.totalNote.subtract(this.netOperations).abs();
 
+            this.withholdingTaxesTotal = fees == null
+                    ? MonetaryValue.zero()
+                    : fees.stream()
+                    .filter(f -> isWithholdingTaxFee(f.getDescription()))
+                    .map(Fee::getValue)
+                    .reduce(MonetaryValue.zero(), MonetaryValue::add);
+
+            this.totalFees = totalExtractedFees.subtract(this.withholdingTaxesTotal);
             this.operations = apportionFees(operations, this.totalFees);
         }
 
@@ -109,25 +108,7 @@ public class TradingNote {
         validateConsistency();
     }
 
-    /**
-     * Validações de consistência entre os valores calculados e extraídos do PDF.
-     *
-     * <p>Check 1 — Rateio de taxas: a soma das taxas rateadas nas operações individuais
-     * deve bater com o totalFees calculado. Tolerância de R$0,02 para arredondamento.</p>
-     *
-     * <p>Check 2 — Cross-check do valor líquido: verifica se o valor líquido da nota (totalNote)
-     * é consistente com as operações e taxas extraídas. O cálculo considera o sinal das operações
-     * (vendas positivas, compras negativas) para funcionar tanto em notas puras quanto mistas.</p>
-     *
-     * <p>Fórmula: {@code |totalNote| ≈ |signedNet - totalFees|}, onde:
-     * <ul>
-     *   <li>{@code signedNet = Σ(vendas) - Σ(compras)}</li>
-     *   <li>Taxas sempre reduzem o líquido, independente da direção da nota</li>
-     * </ul>
-     * </p>
-     */
     private void validateConsistency() {
-        // Check 1: soma das taxas rateadas nas operações ≈ totalFees
         MonetaryValue sumApportioned = operations.stream()
                 .map(Operation::getFee)
                 .reduce(MonetaryValue.zero(), MonetaryValue::add);
@@ -138,7 +119,6 @@ public class TradingNote {
                             totalFees, sumApportioned, diffApportioned));
         }
 
-        // Check 2: |totalNote| ≈ |signedNet - totalFees|
         MonetaryValue signedNet = MonetaryValue.zero();
         for (Operation op : operations) {
             if (op.getType() == OperationType.SELL) {
@@ -147,7 +127,7 @@ public class TradingNote {
                 signedNet = signedNet.subtract(op.getTotalValue());
             }
         }
-        MonetaryValue expectedLiquid = signedNet.subtract(totalFees);
+        MonetaryValue expectedLiquid = signedNet.subtract(totalFees).subtract(withholdingTaxesTotal);
         MonetaryValue diffLiquid = totalNote.abs().subtract(expectedLiquid.abs()).abs();
         double tolerance = Math.max(totalNote.abs().toBigDecimal().doubleValue() * 0.005, 1.00);
         if (diffLiquid.toBigDecimal().doubleValue() > tolerance) {
@@ -157,13 +137,12 @@ public class TradingNote {
         }
     }
 
-    /**
-     * Rateia o totalFees proporcionalmente entre as operações, usando o volume bruto
-     * (soma dos valores absolutos) como base. Isso garante que o rateio funcione
-     * corretamente em notas mistas, onde compras e vendas coexistem.
-     *
-     * <p>Fórmula: {@code fee_operação = |totalValue_operação| × (totalFees / grossVolume)}</p>
-     */
+    private static boolean isWithholdingTaxFee(String description) {
+        if (description == null) return false;
+        String normalized = description.toUpperCase(Locale.ROOT).replaceAll("[^A-Z]", "");
+        return normalized.contains(IRRF_NORMALIZED);
+    }
+
     private static List<Operation> apportionFees(List<Operation> operations, MonetaryValue totalFees) {
         if (totalFees.isZero()) return operations;
 

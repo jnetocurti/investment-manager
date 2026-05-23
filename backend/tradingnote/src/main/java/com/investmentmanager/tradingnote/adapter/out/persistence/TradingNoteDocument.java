@@ -40,6 +40,7 @@ public class TradingNoteDocument {
     private BigDecimal totalNote;
     private BigDecimal netOperations;
     private BigDecimal totalFees;
+    private BigDecimal withholdingTaxesTotal;
     private String fileReference;
     private String currency;
 

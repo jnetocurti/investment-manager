@@ -22,6 +22,7 @@ public class TradingNoteMessage {
     private List<OperationMessage> operations;
     private BigDecimal totalNote;
     private BigDecimal totalFees;
+    private BigDecimal withholdingTaxesTotal;
     private String currency;
 
     @Data
