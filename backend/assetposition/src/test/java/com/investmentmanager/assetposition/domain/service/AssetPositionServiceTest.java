@@ -6,6 +6,9 @@ import com.investmentmanager.assetposition.domain.port.out.AssetPositionReposito
 import com.investmentmanager.assetposition.domain.port.out.PositionImpactQueryPort;
 import com.investmentmanager.assetposition.domain.port.out.BrokerCatalogQueryPort;
 import com.investmentmanager.assetposition.domain.port.out.SplitFractionMetadataPort;
+import com.investmentmanager.assetposition.domain.port.out.RealizedSaleResultRepositoryPort;
+import com.investmentmanager.assetposition.domain.model.RealizedSaleResult;
+import com.investmentmanager.assetposition.domain.model.RealizedResultType;
 import com.investmentmanager.commons.domain.model.AssetType;
 import com.investmentmanager.commons.domain.model.MonetaryValue;
 import com.investmentmanager.commons.domain.model.PositionAdjustmentType;
@@ -20,6 +23,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 class AssetPositionServiceTest {
@@ -201,7 +205,8 @@ class AssetPositionServiceTest {
                 historyRepository,
                 brokerCatalogQueryPort,
                 splitFractionMetadataPort,
-                com.investmentmanager.assetposition.domain.service.impact.PositionImpactApplierRegistry.defaultRegistry());
+                com.investmentmanager.assetposition.domain.service.impact.PositionImpactApplierRegistry.defaultRegistry(),
+                (assetName, brokerKey, results) -> {});
 
         List<PositionImpactData> replaySet = List.of(
                 impact("e1", "ITSA4", PositionImpactType.INCREASE, 3, "10", "0", LocalDate.of(2024, 1, 10), 1),
@@ -511,4 +516,100 @@ class AssetPositionServiceTest {
                 .sourceReferenceId(id + ":" + sequence)
                 .build();
     }
+
+
+    @Test
+    void shouldPersistRealizedProfitForSale() {
+        PositionImpactQueryPort impactQueryPort = mock(PositionImpactQueryPort.class);
+        AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
+        AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
+        BrokerCatalogQueryPort brokerCatalogQueryPort = mock(BrokerCatalogQueryPort.class);
+        RealizedSaleResultRepositoryPort realizedPort = mock(RealizedSaleResultRepositoryPort.class);
+
+        when(brokerCatalogQueryPort.findByBrokerKey("BROKER_XP")).thenReturn(Optional.empty());
+        when(impactQueryPort.findByTickerAndAssetTypeAndBrokerKey("PETR4", AssetType.STOCKS_BRL, "BROKER_XP"))
+                .thenReturn(List.of(
+                        impact("buy", "PETR4", PositionImpactType.INCREASE, 100, "10", "0", LocalDate.of(2024,1,1), 1),
+                        impact("sell", "PETR4", PositionImpactType.DECREASE, 20, "12", "10", LocalDate.of(2024,1,2), 2)
+                ));
+        when(positionRepository.findByAssetNameAndAssetTypeAndBrokerKey("PETR4", AssetType.STOCKS_BRL, "BROKER_XP")).thenReturn(Optional.empty());
+        when(positionRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        AssetPositionService service = new AssetPositionService(impactQueryPort, positionRepository, historyRepository, brokerCatalogQueryPort,
+                (a,b,c)->{}, com.investmentmanager.assetposition.domain.service.impact.PositionImpactApplierRegistry.defaultRegistry(), realizedPort);
+        service.calculatePosition("PETR4", AssetType.STOCKS_BRL, "BROKER_XP");
+
+        var captor = org.mockito.ArgumentCaptor.forClass(List.class);
+        verify(realizedPort).upsertAllByAssetAndBroker(eq("PETR4"), eq("BROKER_XP"), captor.capture());
+        RealizedSaleResult result = (RealizedSaleResult) captor.getValue().getFirst();
+        assertThat(result.getRealizedResultAmount().toBigDecimal()).isEqualByComparingTo("30.000000");
+        assertThat(result.getResultType()).isEqualTo(RealizedResultType.PROFIT);
+    }
+
+    @Test
+    void shouldPersistRealizedLossForSale() {
+        PositionImpactQueryPort impactQueryPort = mock(PositionImpactQueryPort.class);
+        AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
+        AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
+        BrokerCatalogQueryPort brokerCatalogQueryPort = mock(BrokerCatalogQueryPort.class);
+        RealizedSaleResultRepositoryPort realizedPort = mock(RealizedSaleResultRepositoryPort.class);
+        when(brokerCatalogQueryPort.findByBrokerKey("BROKER_XP")).thenReturn(Optional.empty());
+        when(impactQueryPort.findByTickerAndAssetTypeAndBrokerKey("VALE3", AssetType.STOCKS_BRL, "BROKER_XP"))
+                .thenReturn(List.of(impact("buy", "VALE3", PositionImpactType.INCREASE, 10, "20", "0", LocalDate.of(2024,1,1),1),
+                        impact("sell", "VALE3", PositionImpactType.DECREASE, 10, "18", "0", LocalDate.of(2024,1,2),2)));
+        when(positionRepository.findByAssetNameAndAssetTypeAndBrokerKey("VALE3", AssetType.STOCKS_BRL, "BROKER_XP")).thenReturn(Optional.empty());
+        when(positionRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        AssetPositionService service = new AssetPositionService(impactQueryPort, positionRepository, historyRepository, brokerCatalogQueryPort,(a,b,c)->{}, com.investmentmanager.assetposition.domain.service.impact.PositionImpactApplierRegistry.defaultRegistry(), realizedPort);
+        service.calculatePosition("VALE3", AssetType.STOCKS_BRL, "BROKER_XP");
+        var captor = org.mockito.ArgumentCaptor.forClass(List.class);
+        verify(realizedPort).upsertAllByAssetAndBroker(eq("VALE3"), eq("BROKER_XP"), captor.capture());
+        RealizedSaleResult result = (RealizedSaleResult) captor.getValue().getFirst();
+        assertThat(result.getRealizedResultAmount().toBigDecimal()).isEqualByComparingTo("-20.000000");
+        assertThat(result.getResultType()).isEqualTo(RealizedResultType.LOSS);
+    }
+
+    @Test
+    void shouldPersistRealizedResultForPartialSaleAndKeepPosition() {
+        PositionImpactQueryPort impactQueryPort = mock(PositionImpactQueryPort.class);
+        AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
+        AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
+        BrokerCatalogQueryPort brokerCatalogQueryPort = mock(BrokerCatalogQueryPort.class);
+        RealizedSaleResultRepositoryPort realizedPort = mock(RealizedSaleResultRepositoryPort.class);
+        when(brokerCatalogQueryPort.findByBrokerKey("BROKER_XP")).thenReturn(Optional.empty());
+        when(impactQueryPort.findByTickerAndAssetTypeAndBrokerKey("BBAS3", AssetType.STOCKS_BRL, "BROKER_XP"))
+                .thenReturn(List.of(impact("buy", "BBAS3", PositionImpactType.INCREASE, 100, "10", "0", LocalDate.of(2024,1,1),1),
+                        impact("sell", "BBAS3", PositionImpactType.DECREASE, 25, "11", "0", LocalDate.of(2024,1,2),2)));
+        when(positionRepository.findByAssetNameAndAssetTypeAndBrokerKey("BBAS3", AssetType.STOCKS_BRL, "BROKER_XP")).thenReturn(Optional.empty());
+        when(positionRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        AssetPositionService service = new AssetPositionService(impactQueryPort, positionRepository, historyRepository, brokerCatalogQueryPort,(a,b,c)->{}, com.investmentmanager.assetposition.domain.service.impact.PositionImpactApplierRegistry.defaultRegistry(), realizedPort);
+        var pos = service.calculatePosition("BBAS3", AssetType.STOCKS_BRL, "BROKER_XP");
+        assertThat(pos.getQuantity()).isEqualTo(75);
+        var captor = org.mockito.ArgumentCaptor.forClass(List.class);
+        verify(realizedPort).upsertAllByAssetAndBroker(eq("BBAS3"), eq("BROKER_XP"), captor.capture());
+        RealizedSaleResult result = (RealizedSaleResult) captor.getValue().getFirst();
+        assertThat(result.getQuantitySold()).isEqualTo(25);
+    }
+
+    @Test
+    void shouldPersistRealizedResultWhenSaleZerosPosition() {
+        PositionImpactQueryPort impactQueryPort = mock(PositionImpactQueryPort.class);
+        AssetPositionRepositoryPort positionRepository = mock(AssetPositionRepositoryPort.class);
+        AssetPositionHistoryRepositoryPort historyRepository = mock(AssetPositionHistoryRepositoryPort.class);
+        BrokerCatalogQueryPort brokerCatalogQueryPort = mock(BrokerCatalogQueryPort.class);
+        RealizedSaleResultRepositoryPort realizedPort = mock(RealizedSaleResultRepositoryPort.class);
+        when(brokerCatalogQueryPort.findByBrokerKey("BROKER_XP")).thenReturn(Optional.empty());
+        when(impactQueryPort.findByTickerAndAssetTypeAndBrokerKey("BBDC4", AssetType.STOCKS_BRL, "BROKER_XP"))
+                .thenReturn(List.of(impact("buy", "BBDC4", PositionImpactType.INCREASE, 50, "10", "0", LocalDate.of(2024,1,1),1),
+                        impact("sell", "BBDC4", PositionImpactType.DECREASE, 50, "10", "0", LocalDate.of(2024,1,2),2)));
+        when(positionRepository.findByAssetNameAndAssetTypeAndBrokerKey("BBDC4", AssetType.STOCKS_BRL, "BROKER_XP")).thenReturn(Optional.empty());
+        when(positionRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        AssetPositionService service = new AssetPositionService(impactQueryPort, positionRepository, historyRepository, brokerCatalogQueryPort,(a,b,c)->{}, com.investmentmanager.assetposition.domain.service.impact.PositionImpactApplierRegistry.defaultRegistry(), realizedPort);
+        var pos = service.calculatePosition("BBDC4", AssetType.STOCKS_BRL, "BROKER_XP");
+        assertThat(pos.getQuantity()).isEqualTo(0);
+        var captor = org.mockito.ArgumentCaptor.forClass(List.class);
+        verify(realizedPort).upsertAllByAssetAndBroker(eq("BBDC4"), eq("BROKER_XP"), captor.capture());
+        RealizedSaleResult result = (RealizedSaleResult) captor.getValue().getFirst();
+        assertThat(result.getResultType()).isEqualTo(RealizedResultType.BREAK_EVEN);
+    }
+
 }
