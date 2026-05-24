@@ -5,6 +5,7 @@ import com.investmentmanager.assetposition.domain.port.out.AssetPositionReposito
 import com.investmentmanager.assetposition.domain.port.out.BrokerCatalogQueryPort;
 import com.investmentmanager.assetposition.domain.port.out.PositionImpactQueryPort;
 import com.investmentmanager.assetposition.domain.port.out.SplitFractionMetadataPort;
+import com.investmentmanager.assetposition.domain.port.out.RealizedSaleResultRepositoryPort;
 import com.investmentmanager.assetposition.domain.service.AssetPositionService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,13 +19,15 @@ public class AssetPositionConfig {
             AssetPositionRepositoryPort positionRepository,
             AssetPositionHistoryRepositoryPort historyRepository,
             BrokerCatalogQueryPort brokerCatalogQueryPort,
-            SplitFractionMetadataPort splitFractionMetadataPort) {
+            SplitFractionMetadataPort splitFractionMetadataPort,
+            RealizedSaleResultRepositoryPort realizedSaleResultRepositoryPort) {
         return new AssetPositionService(
                 impactQueryPort,
                 positionRepository,
                 historyRepository,
                 brokerCatalogQueryPort,
                 splitFractionMetadataPort,
-                com.investmentmanager.assetposition.domain.service.impact.PositionImpactApplierRegistry.defaultRegistry());
+                com.investmentmanager.assetposition.domain.service.impact.PositionImpactApplierRegistry.defaultRegistry(),
+                realizedSaleResultRepositoryPort);
     }
 }
