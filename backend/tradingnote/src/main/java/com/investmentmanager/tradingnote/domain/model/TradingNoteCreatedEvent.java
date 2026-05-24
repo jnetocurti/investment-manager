@@ -24,6 +24,7 @@ public class TradingNoteCreatedEvent {
     private List<OperationEvent> operations;
     private BigDecimal totalNote;
     private BigDecimal totalFees;
+    private BigDecimal withholdingTaxesTotal;
     private String currency;
 
     public static TradingNoteCreatedEvent from(TradingNote note) {
@@ -36,6 +37,7 @@ public class TradingNoteCreatedEvent {
                 .settlementDate(note.getSettlementDate())
                 .totalNote(note.getTotalNote().toDisplayValue())
                 .totalFees(note.getTotalFees().toDisplayValue())
+                .withholdingTaxesTotal(note.getWithholdingTaxesTotal().toDisplayValue())
                 .currency(note.getCurrency())
                 .operations(note.getOperations().stream()
                         .map(op -> new OperationEvent(

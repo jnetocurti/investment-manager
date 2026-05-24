@@ -23,6 +23,7 @@ class TradingNoteDocumentMapper {
         doc.setTotalNote(note.getTotalNote().toDisplayValue());
         doc.setNetOperations(note.getNetOperations().toDisplayValue());
         doc.setTotalFees(note.getTotalFees().toDisplayValue());
+        doc.setWithholdingTaxesTotal(note.getWithholdingTaxesTotal().toDisplayValue());
         doc.setFileReference(note.getFileReference());
         doc.setCurrency(note.getCurrency());
 
@@ -67,6 +68,7 @@ class TradingNoteDocumentMapper {
                 .totalNote(MonetaryValue.of(doc.getTotalNote()))
                 .netOperations(MonetaryValue.of(doc.getNetOperations()))
                 .totalFees(MonetaryValue.of(doc.getTotalFees()))
+                .withholdingTaxesTotal(MonetaryValue.of(doc.getWithholdingTaxesTotal()))
                 .fileReference(doc.getFileReference())
                 .fileHash(doc.getFileHash())
                 .currency(doc.getCurrency())

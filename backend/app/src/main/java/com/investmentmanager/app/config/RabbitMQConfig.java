@@ -15,6 +15,7 @@ public class RabbitMQConfig {
     public static final String TRADINGNOTE_EXCHANGE = "tradingnote.exchange";
     public static final String TRADINGNOTE_CREATED_QUEUE = "tradingnote.created.queue";
     public static final String TRADINGNOTE_CREATED_ROUTING_KEY = "tradingnote.created";
+    public static final String TRADINGNOTE_WITHHOLDING_TAX_QUEUE = "tradingnote.withholding-tax.queue";
 
     public static final String PORTFOLIOEVENT_EXCHANGE = "portfolioevent.exchange";
     public static final String PORTFOLIOEVENT_PROCESSED_QUEUE = "portfolioevent.processed.queue";
@@ -47,6 +48,19 @@ public class RabbitMQConfig {
     public Binding tradingNoteCreatedBinding(Queue tradingNoteCreatedQueue,
                                               TopicExchange tradingNoteExchange) {
         return BindingBuilder.bind(tradingNoteCreatedQueue)
+                .to(tradingNoteExchange)
+                .with(TRADINGNOTE_CREATED_ROUTING_KEY);
+    }
+
+    @Bean
+    public Queue tradingNoteWithholdingTaxQueue() {
+        return new Queue(TRADINGNOTE_WITHHOLDING_TAX_QUEUE, true);
+    }
+
+    @Bean
+    public Binding tradingNoteWithholdingTaxBinding(Queue tradingNoteWithholdingTaxQueue,
+                                                    TopicExchange tradingNoteExchange) {
+        return BindingBuilder.bind(tradingNoteWithholdingTaxQueue)
                 .to(tradingNoteExchange)
                 .with(TRADINGNOTE_CREATED_ROUTING_KEY);
     }
