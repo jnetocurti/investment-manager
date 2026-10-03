@@ -12,23 +12,21 @@ get_repo_root() {
     fi
 }
 
-get_current_branch() {
-    if [[ -n "${SPECIFY_FEATURE:-}" ]]; then
-        printf '%s\n' "$SPECIFY_FEATURE"
-    else
-        git branch --show-current 2>/dev/null || true
+get_feature_dir() {
+    local root="$1"
+    if [[ -n "${SPECIFY_FEATURE_DIRECTORY:-}" ]]; then
+        printf '%s\n' "$SPECIFY_FEATURE_DIRECTORY"
+        return
     fi
+    if [[ -f "$root/.specify/feature.json" ]]; then
+        python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["feature_directory"])' \
+            "$root/.specify/feature.json"
+        return
+    fi
+    echo "No active feature. Run \$speckit-specify first." >&2
+    return 1
 }
 
-feature_dir_from_branch() {
-    local root="$1" branch="$2"
-    printf '%s/specs/%s\n' "$root" "$branch"
-}
-
-require_feature_branch() {
-    local branch="$1"
-    [[ "$branch" =~ ^[0-9]{3}- ]] || {
-        printf 'Esperada uma branch de funcionalidade no formato ###-nome; recebida: %s\n' "${branch:-<nenhuma>}" >&2
-        return 1
-    }
+json_array() {
+    python3 -c 'import json,sys; print(json.dumps(sys.argv[1:]))' "$@"
 }

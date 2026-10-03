@@ -1,6 +1,6 @@
 # Plano de implementação: [FEATURE]
 
-**Branch**: `[###-feature-name]` | **Data**: [DATE] | **Spec**: [link]
+**Feature directory**: `specs/[###-feature-name]` | **Data**: [DATE] | **Spec**: [link]
 
 ## Resumo
 
@@ -11,12 +11,12 @@
 **Linguagem/versão**: [ou PRECISA DE ESCLARECIMENTO]
 **Dependências principais**: [ou PRECISA DE ESCLARECIMENTO]
 **Armazenamento/infraestrutura**: [ou N/A]
-**Testes/evals**: [testes e, quando probabilístico, dataset/métricas/limites]
+**Testing/evals**: [unit tests, integration tests e, quando probabilístico, dataset/métricas/limites]
 **Restrições**: [compatibilidade, precisão, latência, custo, confiabilidade ou N/A]
 
-## Verificação da constituição
+## Constitution Check
 
-[Avalie cada princípio aplicável antes do design e novamente depois dele. Explique qualquer exceção.]
+[Gates determinados a partir da constitution vigente. Avalie cada princípio aplicável antes do design e novamente depois dele. Explique qualquer exceção.]
 
 ## Estrutura do projeto
 

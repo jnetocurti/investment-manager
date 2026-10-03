@@ -7,7 +7,7 @@ O Investment Manager ingere notas de corretagem brasileiras e eventos corporativ
 - Stack: Java 21, Maven, Spring Boot, MongoDB, RabbitMQ e MinIO; frontend React/Vite.
 - Módulos do reator Maven do backend: `commons`, `tradingnote`, `portfolioevent`, `assetposition` e o módulo executável de composição `app`.
 - Leia [`docs/architecture.md`](docs/architecture.md) antes de alterar um fluxo ou limite de módulo.
-- Especificações de funcionalidades ficam em `specs/<NNN-nome-da-funcionalidade>/`; a política do projeto está em [`.specify/memory/constitution.md`](.specify/memory/constitution.md).
+- Especificações de funcionalidades ficam em `specs/<NNN-nome-da-funcionalidade>/`; a política do projeto está em [`.specify/memory/constitution.md`](.specify/memory/constitution.md). No Codex, use as skills oficiais `$speckit-constitution`, `$speckit-specify`, `$speckit-clarify`, `$speckit-plan`, `$speckit-tasks`, `$speckit-implement` e `$speckit-converge`.
 - Decisões arquiteturais ficam em [`docs/adr/`](docs/adr/); as orientações para avaliações probabilísticas estão em [`evals/README.md`](evals/README.md).
 
 ## Regras para alterações

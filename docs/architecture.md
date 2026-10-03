@@ -4,7 +4,7 @@ Este documento descreve o repositório conforme observado em 2026-10-03. Ele reg
 
 ## Sistema e módulos
 
-O Investment Manager aceita PDFs de notas de corretagem brasileiras e eventos corporativos explícitos, registra eventos de portfólio normalizados, deriva impactos de posição ordenados e recompõe posições de ativos e resultados realizados. Um pequeno frontend React/Vite apresenta atualmente um formulário de upload; a aplicação Spring Boot expõe o backend na porta 8080.
+O Investment Manager aceita PDFs de notas de corretagem brasileiras e eventos corporativos explícitos, registra eventos de portfólio normalizados, deriva impactos de posição ordenados e recompõe posições de ativos e resultados realizados. O frontend React/Vite é embrionário: `App.jsx` apenas apresenta o texto “Investment Manager” e não implementa upload nem outro fluxo funcional. A aplicação Spring Boot expõe o backend na porta 8080.
 
 O reator Maven em Java 21 contém:
 
@@ -18,9 +18,9 @@ O reator Maven em Java 21 contém:
 
 As dependências visíveis nos POMs são `commons <- tradingnote`, `commons <- portfolioevent` e `commons + portfolioevent <- assetposition`; `app` compõe todos os módulos de negócio. O frontend é uma aplicação Vite separada, não um módulo Maven.
 
-## Ports e adapters
+## Ports and adapters
 
-Os módulos de negócio usam os pacotes `domain/model`, `domain/service` e `domain/port/{in,out}`. Configurações Spring constroem serviços de domínio a partir de ports; controllers REST e listeners Rabbit de entrada invocam ports de entrada, enquanto repositórios MongoDB, publishers RabbitMQ, clientes de armazenamento, implementações de parser e adapters de consulta entre módulos implementam ports de saída.
+Os módulos de negócio usam os pacotes `domain/model`, `domain/service` e `domain/port/{in,out}`. Configurações Spring constroem serviços de domínio a partir de ports; controllers REST e listeners Rabbit de entrada invocam ports de entrada, enquanto repositórios MongoDB, publishers RabbitMQ, clientes de armazenamento, implementações de parser e adapters de consulta entre módulos implementam ports de saída. Essa organização materializa uma arquitetura de ports and adapters observável no código.
 
 Os principais adapters de entrada são:
 
@@ -98,5 +98,3 @@ Os pontos de extensão existentes incluem `NoteExtractor`s específicos por corr
 - Build de produção do frontend: `npm --prefix frontend run build`.
 - Infraestrutura local: `docker compose up -d`.
 - Aplicação, após as dependências estarem disponíveis: `mvn -f backend/pom.xml -pl app -am spring-boot:run`.
-
-O teste em lote do parser procura um diretório local `notas/` e é ignorado quando ele não existe; portanto, não constitui uma suíte autocontida de fixtures do parser.

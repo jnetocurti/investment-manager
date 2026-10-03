@@ -1,11 +1,11 @@
 # Especificação da funcionalidade: [FEATURE NAME]
 
-**Branch da funcionalidade**: `[###-feature-name]`
+**Diretório da funcionalidade**: `specs/[###-feature-name]`
 **Criada em**: [DATE]
 **Status**: Rascunho
 **Entrada**: Descrição do usuário: "$ARGUMENTS"
 
-## Cenários de usuário e testes *(obrigatório)*
+## Cenários de usuário e testing *(obrigatório)*
 
 ### História de usuário 1 - [Título breve] (Prioridade: P1)
 
@@ -13,7 +13,7 @@
 
 **Por que esta prioridade**: [Explique o valor e a prioridade.]
 
-**Teste independente**: [Descreva como esta história pode ser verificada isoladamente.]
+**Independent test**: [Descreva como esta história pode ser verificada isoladamente.]
 
 **Cenários de aceitação**:
 

@@ -16,7 +16,7 @@ As tarefas usam `- [ ] T### [P?] [US#?] Descrição com caminho exato do arquivo
 ## Fase 3: História de usuário 1 - [Título] (P1)
 
 **Objetivo**: [Resultado]
-**Teste independente**: [Verificação]
+**Independent test**: [Verificação]
 
 - [ ] T003 [US1] [Tarefa de implementação com caminho]
 

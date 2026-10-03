@@ -1,0 +1,14 @@
+{
+  "integration_state_schema": 1,
+  "integration": "codex",
+  "default_integration": "codex",
+  "installed_integrations": [
+    "codex"
+  ],
+  "integration_settings": {
+    "codex": {
+      "skills": true,
+      "script": "sh"
+    }
+  }
+}
